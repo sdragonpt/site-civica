@@ -69,10 +69,16 @@
             color: #004080;
         }
 
+        .content img {
+            max-width: 100%;
+            height: auto;
+            margin: 20px 0;
+        }
+
         .product-list {
             display: flex;
             flex-wrap: wrap;
-            justify-content: space-between; /* Ajusta o espaçamento entre os cards */
+            justify-content: space-around;
         }
 
         .product-item {
@@ -81,9 +87,9 @@
             border-radius: 5px;
             padding: 10px;
             margin: 10px;
-            width: 23%; /* Ajuste para 4 cards por linha */
+            width: 22%; /* Ajuste para caber 4 cards por linha */
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            text-align: left; /* Ajusta o alinhamento do texto */
+            position: relative; /* Para posicionar o botão */
         }
 
         .product-item img {
@@ -93,25 +99,27 @@
         }
 
         .product-item h3 {
-            font-size: 16px; /* Ajusta o tamanho da fonte */
+            font-size: 18px;
             margin: 10px 0;
         }
 
         .product-item p {
-            font-size: 14px; /* Ajusta o tamanho da fonte */
+            font-size: 16px;
         }
 
-        .product-item .btn {
-            display: inline-block;
-            padding: 10px 15px;
+        .product-item button {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
             background-color: #ff6600;
             color: #fff;
-            text-decoration: none;
+            border: none;
             border-radius: 5px;
-            margin-top: 10px;
+            padding: 10px;
+            cursor: pointer;
         }
 
-        .product-item .btn:hover {
+        .product-item button:hover {
             background-color: #cc5200;
         }
 
@@ -180,10 +188,6 @@
             footer .social {
                 margin-top: 40px;
             }
-
-            .product-item {
-                width: 48%; /* Ajuste para telas pequenas */
-            }
         }
     </style>
 </head>
@@ -232,16 +236,32 @@
                         <h3><?php echo htmlspecialchars($produto['nome']); ?></h3>
                         <p><?php echo htmlspecialchars($produto['descricao']); ?></p>
                         <p>Preço: €<?php echo htmlspecialchars($produto['preco']); ?></p>
-                        <a href="#" class="btn">Ação</a> <!-- Botão adicionado -->
+                        <button>Escolher Ação</button>
                     </div>
                 <?php endwhile; ?>
             </div>
         </div>
 
-        <?php
-        // Obter todas as categorias
-        $categorias_result = $conn->query("SELECT * FROM categorias");
+        <!-- Botões de Navegação para Categorias -->
+        <div class="content">
+            <h2>Categorias</h2>
+            <div class="category-buttons" id="categorias">
+                <?php
+                // Obter todas as categorias
+                $categorias_result = $conn->query("SELECT * FROM categorias");
+                while ($categoria = $categorias_result->fetch_assoc()): 
+                    $categoria_id = $categoria['id'];
+                    $categoria_nome = $categoria['nome'];
+                ?>
+                    <a href="#<?php echo htmlspecialchars($categoria_nome); ?>" class="category-button">
+                        <?php echo htmlspecialchars($categoria_nome); ?>
+                    </a>
+                <?php endwhile; ?>
+            </div>
+        </div>
 
+        <!-- Produtos por Categorias -->
+        <?php
         // Exibir produtos por categorias
         while ($categoria = $categorias_result->fetch_assoc()): 
             $categoria_id = $categoria['id'];
@@ -267,7 +287,7 @@
                             <h3><?php echo htmlspecialchars($produto['nome']); ?></h3>
                             <p><?php echo htmlspecialchars($produto['descricao']); ?></p>
                             <p>Preço: €<?php echo htmlspecialchars($produto['preco']); ?></p>
-                            <a href="#" class="btn">Ação</a> <!-- Botão adicionado -->
+                            <button>Escolher Ação</button>
                         </div>
                     <?php endwhile; ?>
                 </div>
@@ -308,3 +328,4 @@
 </body>
 </html>
 
+                           
