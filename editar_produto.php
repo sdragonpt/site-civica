@@ -21,7 +21,7 @@ function get_imagens($produto_id) {
 // Função para remover uma imagem
 if (isset($_GET['remove_image'])) {
     $imagem_id = $_GET['remove_image'];
-    $produto_id = $_GET['produto_id']; // Captura o ID do produto
+    $produto_id = $_GET['id']; // Captura o ID do produto
 
     // Obtém o nome do arquivo da imagem
     $stmt = $conn->prepare("SELECT imagem FROM imagens WHERE id = ?");
@@ -107,6 +107,7 @@ $imagens = get_imagens($id);
             background-color: #f4f4f4;
             margin: 0;
             padding: 20px;
+            width: 70%;
         }
         .admin-container {
             background-color: #fff;
@@ -198,6 +199,13 @@ $imagens = get_imagens($id);
         .add-button:hover {
             background-color: #009900;
         }
+        .info-box {
+            background-color: #e0f7fa; /* Azul suave */
+            border: 1px solid #b2ebf2;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
@@ -224,9 +232,14 @@ $imagens = get_imagens($id);
             <?php while ($img = $imagens->fetch_assoc()): ?>
                 <div class="image-container">
                     <img src="images/<?php echo htmlspecialchars($img['imagem']); ?>" alt="Imagem do produto">
-                    <a href="editar_produto.php?id=<?php echo htmlspecialchars($produto['id']); ?>&remove_image=<?php echo htmlspecialchars($img['id']); ?>" class="remove-button">X</a>
+                    <a style="text-decoration: none;" href="editar_produto.php?id=<?php echo htmlspecialchars($produto['id']); ?>&remove_image=<?php echo htmlspecialchars($img['id']); ?>" class="remove-button">X</a>
                 </div>
             <?php endwhile; ?>
+        </div>
+
+        <!-- Aviso -->
+        <div class="info-box">
+            Info: Depois de apagares uma foto é normal a informação do produto desaparecer não te preocupes! Dá refresh à página!
         </div>
     </div>
 </body>
