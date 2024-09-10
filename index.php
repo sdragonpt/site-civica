@@ -288,6 +288,7 @@
                             <h3><?php echo htmlspecialchars($produto['nome']); ?></h3>
                             <p><?php echo htmlspecialchars($produto['descricao']); ?></p>
                             <p>Preço: €<?php echo htmlspecialchars($produto['preco']); ?></p>
+                            <button>Ver Mais</button> <!-- Botão para ações futuras -->
                         </div>
                     <?php endwhile; ?>
                 </div>
