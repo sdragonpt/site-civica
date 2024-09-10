@@ -9,13 +9,26 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 
 include 'config.php'; // Inclui a configuração de conexão com o banco de dados
 
-// Função para lidar com a exclusão de produtos
-if (isset($_POST['delete'])) {
-    $id = $_POST['id'];
-    $stmt = $conn->prepare("DELETE FROM produtos WHERE id = ?");
-    $stmt->bind_param("i", $id);
+// Função para carregar imagens associadas ao produto
+function get_imagens($produto_id) {
+    global $conn;
+    $stmt = $conn->prepare("SELECT * FROM imagens WHERE produto_id = ?");
+    $stmt->bind_param("i", $produto_id);
     $stmt->execute();
-    $stmt->close();
+    return $stmt->get_result();
+}
+
+// Função para carregar categorias associadas ao produto
+function get_categorias($produto_id) {
+    global $conn;
+    $stmt = $conn->prepare("
+        SELECT c.* 
+        FROM categorias c 
+        JOIN produto_categoria pc ON c.id = pc.categoria_id 
+        WHERE pc.produto_id = ?");
+    $stmt->bind_param("i", $produto_id);
+    $stmt->execute();
+    return $stmt->get_result();
 }
 
 // Função para adicionar produtos
@@ -24,8 +37,23 @@ if (isset($_POST['add'])) {
     $descricao = $_POST['descricao'];
     $preco = $_POST['preco'];
 
+    // Insere o produto
+    $stmt = $conn->prepare("INSERT INTO produtos (nome, descricao, preco) VALUES (?, ?, ?)");
+    $stmt->bind_param("ssi", $nome, $descricao, $preco);
+    $stmt->execute();
+    $produto_id = $stmt->insert_id;
+    $stmt->close();
+
+    // Associa categorias ao produto
+    if (isset($_POST['categorias'])) {
+        foreach ($_POST['categorias'] as $categoria_id) {
+            $stmt = $conn->prepare("INSERT INTO produto_categoria (produto_id, categoria_id) VALUES (?, ?)");
+            $stmt->bind_param("ii", $produto_id, $categoria_id);
+            $stmt->execute();
+        }
+    }
+
     // Manipula o upload de imagens
-    $imagem = '';
     if (isset($_FILES['imagens']) && $_FILES['imagens']['error'][0] == UPLOAD_ERR_OK) {
         $target_dir = "images/";
         foreach ($_FILES['imagens']['name'] as $key => $name) {
@@ -47,30 +75,6 @@ if (isset($_POST['add'])) {
             }
         }
     }
-
-    $stmt = $conn->prepare("INSERT INTO produtos (nome, descricao, preco) VALUES (?, ?, ?)");
-    $stmt->bind_param("ssi", $nome, $descricao, $preco);
-    $stmt->execute();
-    $produto_id = $stmt->insert_id;
-    $stmt->close();
-    
-    // Manipula a associação das imagens ao produto
-    if (isset($_FILES['imagens']) && $_FILES['imagens']['error'][0] == UPLOAD_ERR_OK) {
-        foreach ($_FILES['imagens']['name'] as $key => $name) {
-            $stmt = $conn->prepare("INSERT INTO imagens (produto_id, imagem) VALUES (?, ?)");
-            $stmt->bind_param("is", $produto_id, $name);
-            $stmt->execute();
-        }
-    }
-
-    // Associa categorias ao produto
-    if (isset($_POST['categorias'])) {
-        foreach ($_POST['categorias'] as $categoria_id) {
-            $stmt = $conn->prepare("INSERT INTO produto_categoria (produto_id, categoria_id) VALUES (?, ?)");
-            $stmt->bind_param("ii", $produto_id, $categoria_id);
-            $stmt->execute();
-        }
-    }
 }
 
 // Função para procurar produtos
@@ -78,23 +82,6 @@ $stmt = $conn->prepare("SELECT * FROM produtos");
 $stmt->execute();
 $produtos = $stmt->get_result();
 $stmt->close();
-
-// Logout
-if (isset($_GET['logout'])) {
-    session_unset();
-    session_destroy();
-    header("Location: login.php");
-    exit();
-}
-
-// Carregar imagens associadas ao produto
-function get_imagens($produto_id) {
-    global $conn;
-    $stmt = $conn->prepare("SELECT * FROM imagens WHERE produto_id = ?");
-    $stmt->bind_param("i", $produto_id);
-    $stmt->execute();
-    return $stmt->get_result();
-}
 
 // Função para adicionar categorias
 if (isset($_POST['add_category'])) {
@@ -108,6 +95,13 @@ if (isset($_POST['add_category'])) {
 // Obter categorias existentes
 $categorias_result = $conn->query("SELECT * FROM categorias");
 
+// Logout
+if (isset($_GET['logout'])) {
+    session_unset();
+    session_destroy();
+    header("Location: login.php");
+    exit();
+}
 ?>
 
 <!DOCTYPE html>
@@ -222,6 +216,13 @@ $categorias_result = $conn->query("SELECT * FROM categorias");
             background-color: #00cc00;
             color: #fff;
         }
+        .info-box {
+            background-color: #e0f7fa; /* Azul suave */
+            border: 1px solid #b2ebf2;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
     </style>
     <script>
         function toggleCategory(categoryBox, categoryId) {
@@ -280,16 +281,30 @@ $categorias_result = $conn->query("SELECT * FROM categorias");
                     <th>Nome</th>
                     <th>Descrição</th>
                     <th>Preço</th>
+                    <th>Categorias</th>
+                    <th>Imagens</th>
                     <th>Ações</th>
                 </tr>
             </thead>
             <tbody>
                 <?php while ($produto = $produtos->fetch_assoc()): ?>
+                    <?php $categorias_produto = get_categorias($produto['id']); ?>
+                    <?php $imagens_produto = get_imagens($produto['id']); ?>
                     <tr>
                         <td><?php echo htmlspecialchars($produto['id']); ?></td>
                         <td><?php echo htmlspecialchars($produto['nome']); ?></td>
                         <td><?php echo htmlspecialchars($produto['descricao']); ?></td>
                         <td><?php echo htmlspecialchars($produto['preco']); ?></td>
+                        <td>
+                            <?php while ($categoria = $categorias_produto->fetch_assoc()): ?>
+                                <?php echo htmlspecialchars($categoria['nome']) . '<br>'; ?>
+                            <?php endwhile; ?>
+                        </td>
+                        <td>
+                            <?php while ($imagem = $imagens_produto->fetch_assoc()): ?>
+                                <img src="images/<?php echo htmlspecialchars($imagem['imagem']); ?>" alt="Imagem" style="width: 50px; height: 50px; object-fit: cover; margin-right: 5px;">
+                            <?php endwhile; ?>
+                        </td>
                         <td>
                             <a href="editar_produto.php?id=<?php echo htmlspecialchars($produto['id']); ?>" class="edit-button">Editar</a>
                             <form method="post" action="" style="display: inline;">
@@ -301,6 +316,9 @@ $categorias_result = $conn->query("SELECT * FROM categorias");
                 <?php endwhile; ?>
             </tbody>
         </table>
+        
+        <!-- Gerenciar Categorias -->
+        <h2>Categorias <a href="gerenciar_categorias.php" class="edit-button">Gerir</a></h2>
     </div>
 </body>
 </html>
