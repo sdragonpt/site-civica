@@ -9,20 +9,11 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 
 include 'config.php'; // Inclui a configuração de conexão com o banco de dados
 
-// Função para carregar imagens associadas ao produto
-function get_imagens($produto_id) {
-    global $conn;
-    $stmt = $conn->prepare("SELECT * FROM imagens WHERE produto_id = ?");
-    $stmt->bind_param("i", $produto_id);
-    $stmt->execute();
-    return $stmt->get_result();
-}
-
 // Função para carregar categorias associadas ao produto
 function get_categorias($produto_id) {
     global $conn;
     $stmt = $conn->prepare("
-        SELECT c.* 
+        SELECT c.nome 
         FROM categorias c 
         JOIN produto_categoria pc ON c.id = pc.categoria_id 
         WHERE pc.produto_id = ?");
@@ -45,13 +36,12 @@ if (isset($_POST['add'])) {
     $stmt->close();
 
     // Associa categorias ao produto
-    if (isset($_POST['categorias']) && is_array($_POST['categorias'])) {
+    if (isset($_POST['categorias'])) {
         foreach ($_POST['categorias'] as $categoria_id) {
             $stmt = $conn->prepare("INSERT INTO produto_categoria (produto_id, categoria_id) VALUES (?, ?)");
             $stmt->bind_param("ii", $produto_id, $categoria_id);
-            if (!$stmt->execute()) {
-                echo "Erro ao associar categoria ao produto: " . $stmt->error;
-            }
+            $stmt->execute();
+            $stmt->close();
         }
     }
 
@@ -68,9 +58,8 @@ if (isset($_POST['add'])) {
                 if (move_uploaded_file($_FILES["imagens"]["tmp_name"][$key], $target_file)) {
                     $stmt = $conn->prepare("INSERT INTO imagens (produto_id, imagem) VALUES (?, ?)");
                     $stmt->bind_param("is", $produto_id, $name);
-                    if (!$stmt->execute()) {
-                        echo "Erro ao salvar imagem no banco de dados: " . $stmt->error;
-                    }
+                    $stmt->execute();
+                    $stmt->close();
                 } else {
                     echo "Desculpe, ocorreu um erro ao fazer upload da imagem.";
                 }
@@ -83,47 +72,14 @@ if (isset($_POST['add'])) {
     echo "Produto adicionado com sucesso!";
 }
 
-// Função para excluir produtos
-if (isset($_POST['delete'])) {
-    $produto_id = $_POST['id'];
-
-    // Remove o produto da tabela produto_categoria
-    $stmt = $conn->prepare("DELETE FROM produto_categoria WHERE produto_id = ?");
-    $stmt->bind_param("i", $produto_id);
-    $stmt->execute();
-    $stmt->close();
-
-    // Remove imagens associadas
-    $stmt = $conn->prepare("SELECT imagem FROM imagens WHERE produto_id = ?");
-    $stmt->bind_param("i", $produto_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    while ($img = $result->fetch_assoc()) {
-        $imagem = $img['imagem'];
-        if (file_exists("images/$imagem")) {
-            unlink("images/$imagem");
-        }
-    }
-    $stmt->close();
-
-    // Remove o produto
-    $stmt = $conn->prepare("DELETE FROM produtos WHERE id = ?");
-    $stmt->bind_param("i", $produto_id);
-    $stmt->execute();
-    $stmt->close();
-
-    header("Location: admin.php");
-    exit();
-}
-
-// Função para carregar categorias existentes
-$categorias_result = $conn->query("SELECT * FROM categorias");
-
 // Função para buscar todos os produtos
 $stmt = $conn->prepare("SELECT * FROM produtos");
 $stmt->execute();
 $produtos = $stmt->get_result();
 $stmt->close();
+
+// Função para carregar categorias existentes
+$categorias_result = $conn->query("SELECT * FROM categorias");
 
 // Logout
 if (isset($_GET['logout'])) {
@@ -228,44 +184,15 @@ if (isset($_GET['logout'])) {
         .edit-button:hover {
             background-color: #cca700;
         }
-        .category-selector {
+        .category-list {
             display: flex;
             flex-wrap: wrap;
             margin-top: 10px;
         }
-        .category-box {
-            padding: 10px;
-            margin: 5px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            cursor: pointer;
-            background-color: #fff;
-            transition: background-color 0.3s ease;
-        }
-        .category-box.selected {
-            background-color: #00cc00;
-            color: #fff;
+        .category-list input[type="checkbox"] {
+            margin-right: 10px;
         }
     </style>
-    <script>
-        function toggleCategory(categoryBox, categoryId) {
-            categoryBox.classList.toggle('selected');
-            const selectedCategories = document.getElementById('selected_categories');
-            const index = Array.from(selectedCategories.options).findIndex(option => option.value == categoryId);
-            if (categoryBox.classList.contains('selected')) {
-                if (index === -1) {
-                    const option = document.createElement('option');
-                    option.value = categoryId;
-                    option.textContent = categoryBox.textContent;
-                    selectedCategories.appendChild(option);
-                }
-            } else {
-                if (index !== -1) {
-                    selectedCategories.remove(index);
-                }
-            }
-        }
-    </script>
 </head>
 <body>
     <div class="admin-container">
@@ -280,16 +207,16 @@ if (isset($_GET['logout'])) {
                 <textarea name="descricao" placeholder="Descrição" required></textarea>
                 <input type="text" name="preco" placeholder="Preço" required>
                 <input type="file" name="imagens[]" multiple>
-                <div class="form-group">
-                    <h3>Selecionar Categorias</h3>
-                    <div class="category-selector">
-                        <?php while ($categoria = $categorias_result->fetch_assoc()): ?>
-                            <div class="category-box" onclick="toggleCategory(this, <?php echo $categoria['id']; ?>)">
-                                <?php echo htmlspecialchars($categoria['nome']); ?>
-                            </div>
-                        <?php endwhile; ?>
-                    </div>
-                    <select id="selected_categories" name="categorias[]" multiple style="display: none;"></select>
+
+                <!-- Seção de seleção de categorias -->
+                <h3>Selecionar Categorias</h3>
+                <div class="category-list">
+                    <?php while ($categoria = $categorias_result->fetch_assoc()): ?>
+                        <label>
+                            <input type="checkbox" name="categorias[]" value="<?php echo $categoria['id']; ?>">
+                            <?php echo htmlspecialchars($categoria['nome']); ?>
+                        </label>
+                    <?php endwhile; ?>
                 </div>
             </div>
             <button type="submit" name="add">Adicionar Produto</button>
@@ -341,9 +268,6 @@ if (isset($_GET['logout'])) {
                 <?php endwhile; ?>
             </tbody>
         </table>
-        
-        <!-- Gerenciar Categorias -->
-        <h2>Categorias <a href="gerenciar_categorias.php" class="edit-button">Gerir</a></h2>
     </div>
 </body>
 </html>
