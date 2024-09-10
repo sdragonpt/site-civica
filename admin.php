@@ -147,6 +147,7 @@ $categorias_result = $conn->query("SELECT * FROM categorias");
             margin: 5px 0;
             border: 1px solid #ddd;
             border-radius: 4px;
+            float: left;
         }
         .form-group button {
             padding: 10px 20px;
