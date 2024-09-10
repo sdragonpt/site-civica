@@ -69,16 +69,10 @@
             color: #004080;
         }
 
-        .content img {
-            max-width: 100%;
-            height: auto;
-            margin: 20px 0;
-        }
-
         .product-list {
             display: flex;
             flex-wrap: wrap;
-            justify-content: space-around;
+            justify-content: space-between; /* Ajusta o espaçamento entre os cards */
         }
 
         .product-item {
@@ -87,8 +81,9 @@
             border-radius: 5px;
             padding: 10px;
             margin: 10px;
-            width: 30%;
+            width: 23%; /* Ajuste para 4 cards por linha */
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: left; /* Ajusta o alinhamento do texto */
         }
 
         .product-item img {
@@ -98,12 +93,26 @@
         }
 
         .product-item h3 {
-            font-size: 18px;
+            font-size: 16px; /* Ajusta o tamanho da fonte */
             margin: 10px 0;
         }
 
         .product-item p {
-            font-size: 16px;
+            font-size: 14px; /* Ajusta o tamanho da fonte */
+        }
+
+        .product-item .btn {
+            display: inline-block;
+            padding: 10px 15px;
+            background-color: #ff6600;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        .product-item .btn:hover {
+            background-color: #cc5200;
         }
 
         footer {
@@ -171,25 +180,10 @@
             footer .social {
                 margin-top: 40px;
             }
-        }
 
-        /* Estilo para botões de categorias */
-        .category-buttons {
-            margin-top: 20px;
-        }
-
-        .category-buttons a {
-            display: inline-block;
-            padding: 10px 20px;
-            margin: 5px;
-            background-color: #ff6600;
-            color: #fff;
-            text-decoration: none;
-            border-radius: 4px;
-        }
-
-        .category-buttons a:hover {
-            background-color: #cc5200;
+            .product-item {
+                width: 48%; /* Ajuste para telas pequenas */
+            }
         }
     </style>
 </head>
@@ -238,47 +232,34 @@
                         <h3><?php echo htmlspecialchars($produto['nome']); ?></h3>
                         <p><?php echo htmlspecialchars($produto['descricao']); ?></p>
                         <p>Preço: €<?php echo htmlspecialchars($produto['preco']); ?></p>
+                        <a href="#" class="btn">Ação</a> <!-- Botão adicionado -->
                     </div>
                 <?php endwhile; ?>
             </div>
         </div>
 
-        <!-- Botões de categorias -->
-        <div class="category-buttons" id="categorias">
-            <?php
-            // Obter todas as categorias
-            $categorias_result = $conn->query("SELECT * FROM categorias");
-            while ($categoria = $categorias_result->fetch_assoc()): 
-                $categoria_nome = htmlspecialchars($categoria['nome']);
-                $categoria_id = htmlspecialchars($categoria['id']);
-            ?>
-                <a href="#<?php echo $categoria_nome; ?>"><?php echo $categoria_nome; ?></a>
-            <?php endwhile; ?>
-        </div>
-
-        <!-- Exibir produtos por categorias -->
         <?php
-        $categorias_result->data_seek(0); // Resetar o ponteiro do resultado para reusar a variável
+        // Obter todas as categorias
+        $categorias_result = $conn->query("SELECT * FROM categorias");
 
+        // Exibir produtos por categorias
         while ($categoria = $categorias_result->fetch_assoc()): 
             $categoria_id = $categoria['id'];
-            $categoria_nome = htmlspecialchars($categoria['nome']);
+            $categoria_nome = $categoria['nome'];
 
             // Obter produtos para a categoria atual
             $stmt = $conn->prepare("
-                SELECT p.*, i.imagem 
+                SELECT p.* 
                 FROM produtos p
                 INNER JOIN produto_categoria pc ON p.id = pc.produto_id
-                LEFT JOIN imagens i ON p.id = i.produto_id
                 WHERE pc.categoria_id = ?
-                AND i.imagem IS NOT NULL
             ");
             $stmt->bind_param("i", $categoria_id);
             $stmt->execute();
             $produtos_result = $stmt->get_result();
         ?>
-            <div class="content" id="<?php echo $categoria_nome; ?>">
-                <h2><?php echo $categoria_nome; ?></h2>
+            <div class="content" id="<?php echo htmlspecialchars($categoria_nome); ?>">
+                <h2><?php echo htmlspecialchars($categoria_nome); ?></h2>
                 <div class="product-list">
                     <?php while ($produto = $produtos_result->fetch_assoc()): ?>
                         <div class="product-item">
@@ -286,6 +267,7 @@
                             <h3><?php echo htmlspecialchars($produto['nome']); ?></h3>
                             <p><?php echo htmlspecialchars($produto['descricao']); ?></p>
                             <p>Preço: €<?php echo htmlspecialchars($produto['preco']); ?></p>
+                            <a href="#" class="btn">Ação</a> <!-- Botão adicionado -->
                         </div>
                     <?php endwhile; ?>
                 </div>
