@@ -282,12 +282,12 @@ $categorias_result = get_all_categorias();
                 <div class="category-list">
                     <?php while ($categoria = $categorias_result->fetch_assoc()): ?>
                         <label>
-                            <input type="checkbox" name="categorias[]" value="<?php echo htmlspecialchars($categoria['id']); ?>"
+                        <div style="width: 13px; margin: 0px; float: left;"><input type="checkbox" name="categorias[]" value="<?php echo htmlspecialchars($categoria['id']); ?>"
                             <?php if (in_array($categoria['id'], array_column($categorias_produto->fetch_all(MYSQLI_ASSOC), 'id'))): ?>
                                 checked
                             <?php endif; ?>
-                            >
-                            <?php echo htmlspecialchars($categoria['nome']); ?>
+                            ></div>
+                            <div style="float: left; margin-top: 3px; margin-left: 5px;"><?php echo htmlspecialchars($categoria['nome']); ?></div>
                         </label>
                     <?php endwhile; ?>
                 </div>
