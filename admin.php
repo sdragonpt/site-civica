@@ -108,7 +108,7 @@ if (isset($_GET['logout'])) {
             margin-bottom: 15px;
         }
         .form-group input, .form-group textarea {
-            width: 100%;
+            width: 40%;
             padding: 10px;
             margin: 5px 0;
             border: 1px solid #ddd;
