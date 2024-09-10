@@ -69,8 +69,8 @@ $search = '';
 if (isset($_POST['search'])) {
     $search = $_POST['search'];
     $stmt = $conn->prepare("SELECT * FROM produtos WHERE nome LIKE ?");
-    $stmt->bind_param("s", $search);
     $search = "%$search%";
+    $stmt->bind_param("s", $search);
 } else {
     $stmt = $conn->prepare("SELECT * FROM produtos");
 }
@@ -203,20 +203,19 @@ function get_imagens($produto_id) {
         <h2>Adicionar Produto</h2>
         <form method="post" action="" enctype="multipart/form-data">
             <div class="form-group">
-                <div><input type="text" name="nome" placeholder="Nome" required></div>
-                <div><textarea name="descricao" placeholder="Descrição"></textarea></div>
-                <div><input type="text" name="preco" placeholder="Preço" required></div>
-                <div><input type="file" name="imagens[]" multiple></div>
+                <input type="text" name="nome" placeholder="Nome" required>
+                <textarea name="descricao" placeholder="Descrição"></textarea>
+                <input type="text" name="preco" placeholder="Preço" required>
+                <input type="file" name="imagens[]" multiple>
             </div>
             <button type="submit" name="add">Adicionar Produto</button>
         </form>
-
 
         <!-- Formulário para procurar produtos -->
         <h2>Procurar Produtos</h2>
         <form method="post" action="">
             <div class="form-group">
-                <input type="text" name="search" placeholder="Nome do Produto">
+                <input type="text" name="search" placeholder="Nome do Produto" value="<?php echo htmlspecialchars($search); ?>">
             </div>
             <button type="submit" name="search">Buscar</button>
         </form>
