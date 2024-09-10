@@ -9,57 +9,23 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 
 include 'config.php'; // Inclui a configuração de conexão com o banco de dados
 
-// Função para carregar as imagens associadas ao produto
-function get_imagens($produto_id) {
-    global $conn;
-    $stmt = $conn->prepare("SELECT * FROM imagens WHERE produto_id = ?");
-    $stmt->bind_param("i", $produto_id);
-    $stmt->execute();
-    return $stmt->get_result();
-}
-
-// Função para remover uma imagem
-if (isset($_GET['remove_image'])) {
-    $imagem_id = $_GET['remove_image'];
-    $produto_id = $_GET['id']; // Captura o ID do produto
-
-    // Obtém o nome do arquivo da imagem
-    $stmt = $conn->prepare("SELECT imagem FROM imagens WHERE id = ?");
-    $stmt->bind_param("i", $imagem_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $imagem = $result->fetch_assoc()['imagem'];
-    $stmt->close();
-
-    // Remove o arquivo da pasta de imagens
-    if (file_exists("images/$imagem")) {
-        unlink("images/$imagem");
-    }
-
-    // Remove a entrada do banco de dados
-    $stmt = $conn->prepare("DELETE FROM imagens WHERE id = ?");
-    $stmt->bind_param("i", $imagem_id);
-    $stmt->execute();
-    $stmt->close();
-
-    header("Location: editar_produto.php?id=$produto_id"); // Redireciona de volta para a página de edição do produto
-    exit();
-}
-
-// Função para editar produtos
-if (isset($_POST['edit'])) {
+// Função para lidar com a exclusão de produtos
+if (isset($_POST['delete'])) {
     $id = $_POST['id'];
+    $stmt = $conn->prepare("DELETE FROM produtos WHERE id = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $stmt->close();
+}
+
+// Função para adicionar produtos
+if (isset($_POST['add'])) {
     $nome = $_POST['nome'];
     $descricao = $_POST['descricao'];
     $preco = $_POST['preco'];
 
-    // Atualiza as informações do produto
-    $stmt = $conn->prepare("UPDATE produtos SET nome = ?, descricao = ?, preco = ? WHERE id = ?");
-    $stmt->bind_param("ssii", $nome, $descricao, $preco, $id);
-    $stmt->execute();
-    $stmt->close();
-
     // Manipula o upload de imagens
+    $imagem = '';
     if (isset($_FILES['imagens']) && $_FILES['imagens']['error'][0] == UPLOAD_ERR_OK) {
         $target_dir = "images/";
         foreach ($_FILES['imagens']['name'] as $key => $name) {
@@ -71,7 +37,7 @@ if (isset($_POST['edit'])) {
             if ($check !== false) {
                 if (move_uploaded_file($_FILES["imagens"]["tmp_name"][$key], $target_file)) {
                     $stmt = $conn->prepare("INSERT INTO imagens (produto_id, imagem) VALUES (?, ?)");
-                    $stmt->bind_param("is", $id, $name);
+                    $stmt->bind_param("is", $produto_id, $name);
                     $stmt->execute();
                 } else {
                     echo "Desculpe, ocorreu um erro ao fazer upload da imagem.";
@@ -81,18 +47,67 @@ if (isset($_POST['edit'])) {
             }
         }
     }
+
+    $stmt = $conn->prepare("INSERT INTO produtos (nome, descricao, preco) VALUES (?, ?, ?)");
+    $stmt->bind_param("ssi", $nome, $descricao, $preco);
+    $stmt->execute();
+    $produto_id = $stmt->insert_id;
+    $stmt->close();
+    
+    // Manipula a associação das imagens ao produto
+    if (isset($_FILES['imagens']) && $_FILES['imagens']['error'][0] == UPLOAD_ERR_OK) {
+        foreach ($_FILES['imagens']['name'] as $key => $name) {
+            $stmt = $conn->prepare("INSERT INTO imagens (produto_id, imagem) VALUES (?, ?)");
+            $stmt->bind_param("is", $produto_id, $name);
+            $stmt->execute();
+        }
+    }
+
+    // Associa categorias ao produto
+    if (isset($_POST['categorias'])) {
+        foreach ($_POST['categorias'] as $categoria_id) {
+            $stmt = $conn->prepare("INSERT INTO produto_categoria (produto_id, categoria_id) VALUES (?, ?)");
+            $stmt->bind_param("ii", $produto_id, $categoria_id);
+            $stmt->execute();
+        }
+    }
 }
 
-// Obtém o ID do produto para editar
-$id = isset($_GET['id']) ? intval($_GET['id']) : 0;
-$stmt = $conn->prepare("SELECT * FROM produtos WHERE id = ?");
-$stmt->bind_param("i", $id);
+// Função para procurar produtos
+$stmt = $conn->prepare("SELECT * FROM produtos");
 $stmt->execute();
-$produto = $stmt->get_result()->fetch_assoc();
+$produtos = $stmt->get_result();
 $stmt->close();
 
-// Obtém as imagens do produto
-$imagens = get_imagens($id);
+// Logout
+if (isset($_GET['logout'])) {
+    session_unset();
+    session_destroy();
+    header("Location: login.php");
+    exit();
+}
+
+// Carregar imagens associadas ao produto
+function get_imagens($produto_id) {
+    global $conn;
+    $stmt = $conn->prepare("SELECT * FROM imagens WHERE produto_id = ?");
+    $stmt->bind_param("i", $produto_id);
+    $stmt->execute();
+    return $stmt->get_result();
+}
+
+// Função para adicionar categorias
+if (isset($_POST['add_category'])) {
+    $nome_categoria = $_POST['nome_categoria'];
+    $stmt = $conn->prepare("INSERT INTO categorias (nome) VALUES (?)");
+    $stmt->bind_param("s", $nome_categoria);
+    $stmt->execute();
+    $stmt->close();
+}
+
+// Obter categorias existentes
+$categorias_result = $conn->query("SELECT * FROM categorias");
+
 ?>
 
 <!DOCTYPE html>
@@ -100,15 +115,15 @@ $imagens = get_imagens($id);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Editar Produto - Civica</title>
+    <title>Admin - Civica</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             background-color: #f4f4f4;
             margin: 0;
             padding: 20px;
-            margin-left: 20%;
-            margin-right: 20%;
+            margin-right: 10%;
+            margin-left: 10%;
         }
         .admin-container {
             background-color: #fff;
@@ -117,9 +132,10 @@ $imagens = get_imagens($id);
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             position: relative;
         }
-        .logout-button, .back-button {
+        .logout-button {
             position: absolute;
             top: 20px;
+            right: 20px;
             padding: 10px 20px;
             background-color: #333;
             border: none;
@@ -127,20 +143,15 @@ $imagens = get_imagens($id);
             color: #fff;
             cursor: pointer;
         }
-        .back-button {
-            right: 120px;
-        }
-        .logout-button {
-            right: 20px;
-        }
-        .back-button:hover, .logout-button:hover {
-            background-color: #333;
+        .logout-button:hover {
+            background-color: #cc5200;
         }
         .form-group {
             margin-bottom: 15px;
         }
         .form-group input, .form-group textarea {
             width: 100%;
+            max-width: 300px;
             padding: 8px;
             margin: 5px 0;
             border: 1px solid #ddd;
@@ -155,93 +166,141 @@ $imagens = get_imagens($id);
             cursor: pointer;
         }
         .form-group button:hover {
-            background-color: #333;
+            background-color: #cc5200;
         }
-        .image-container {
-            position: relative;
-            display: inline-block;
-            margin-right: 10px;
-            margin-bottom: 10px;
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
         }
-        .image-container img {
-            width: 100px;
-            height: 100px;
-            object-fit: cover;
+        table, th, td {
+            border: 1px solid #ddd;
         }
-        .remove-button {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            background-color: #ff0000;
-            color: #fff;
-            border: none;
-            padding: 5px;
-            border-radius: 50%;
-            cursor: pointer;
-            font-size: 14px;
-            width: 20px;
-            height: 20px;
-            text-align: center;
-            line-height: 20px;
+        th, td {
+            padding: 10px;
+            text-align: left;
         }
-        .remove-button:hover {
-            background-color: #cc0000;
+        th {
+            background-color: #f4f4f4;
         }
-        .add-button {
-            display: inline-block;
-            margin-top: 10px;
+        .delete-button, .edit-button {
             padding: 5px 10px;
-            background-color: #00cc00;
-            color: #fff;
             border: none;
             border-radius: 4px;
             cursor: pointer;
+            font-size: 13px;
         }
-        .add-button:hover {
-            background-color: #009900;
+        .delete-button {
+            background-color: #ff0000;
+            color: #fff;
         }
-        .info-box {
-            background-color: #e0f7fa; /* Azul suave */
-            border: 1px solid #b2ebf2;
+        .delete-button:hover {
+            background-color: #cc0000;
+        }
+        .edit-button {
+            background-color: #ffcc00;
+            color: #fff;
+        }
+        .edit-button:hover {
+            background-color: #cca700;
+        }
+        .category-selector {
+            display: flex;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        .category-box {
             padding: 10px;
-            border-radius: 5px;
-            margin-top: 20px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            background-color: #fff;
+            transition: background-color 0.3s ease;
+        }
+        .category-box.selected {
+            background-color: #00cc00;
+            color: #fff;
         }
     </style>
+    <script>
+        function toggleCategory(categoryBox, categoryId) {
+            categoryBox.classList.toggle('selected');
+            const selectedCategories = document.getElementById('selected_categories');
+            const index = Array.from(selectedCategories.options).findIndex(option => option.value == categoryId);
+            if (categoryBox.classList.contains('selected')) {
+                if (index === -1) {
+                    const option = document.createElement('option');
+                    option.value = categoryId;
+                    option.text = categoryBox.textContent;
+                    selectedCategories.add(option);
+                }
+            } else {
+                if (index !== -1) {
+                    selectedCategories.remove(index);
+                }
+            }
+        }
+    </script>
 </head>
 <body>
     <div class="admin-container">
-        <button class="back-button" onclick="window.location.href='admin.php'">Voltar</button>
         <button class="logout-button" onclick="window.location.href='admin.php?logout=true'">Logout</button>
-        <h1 style="color: #ffcc00">Editar Produto</h1>
+        <h1 style="color: #ffcc00">Gerenciar Produtos</h1>
 
-        <!-- Formulário para editar produto -->
+        <!-- Formulário para adicionar produtos -->
+        <h2>Adicionar Produto</h2>
         <form method="post" action="" enctype="multipart/form-data">
             <div class="form-group">
-                <input type="text" name="id" value="<?php echo htmlspecialchars($produto['id']); ?>" readonly>
-                <input type="text" name="nome" value="<?php echo htmlspecialchars($produto['nome']); ?>" placeholder="Nome">
-                <textarea name="descricao" placeholder="Descrição"><?php echo htmlspecialchars($produto['descricao']); ?></textarea>
-                <input type="text" name="preco" value="<?php echo htmlspecialchars($produto['preco']); ?>" placeholder="Preço">
+                <input type="text" name="nome" placeholder="Nome" required>
+                <textarea name="descricao" placeholder="Descrição" required></textarea>
+                <input type="text" name="preco" placeholder="Preço" required>
                 <input type="file" name="imagens[]" multiple>
             </div>
-            <button type="submit" name="edit">Salvar Alterações</button>
+            <div class="form-group">
+                <label for="categorias">Categorias:</label>
+                <div class="category-selector">
+                    <?php while ($categoria = $categorias_result->fetch_assoc()): ?>
+                        <div class="category-box" onclick="toggleCategory(this, <?php echo $categoria['id']; ?>)">
+                            <?php echo htmlspecialchars($categoria['nome']); ?>
+                        </div>
+                    <?php endwhile; ?>
+                </div>
+                <select id="selected_categories" name="categorias[]" multiple style="display: none;"></select>
+            </div>
+            <button type="submit" name="add">Adicionar Produto</button>
         </form>
 
-        <!-- Exibe as imagens existentes com opção de remoção -->
-        <h2>Imagens Atuais</h2>
-        <div>
-            <?php while ($img = $imagens->fetch_assoc()): ?>
-                <div class="image-container">
-                    <img src="images/<?php echo htmlspecialchars($img['imagem']); ?>" alt="Imagem do produto">
-                    <a style="text-decoration: none;" href="editar_produto.php?id=<?php echo htmlspecialchars($produto['id']); ?>&remove_image=<?php echo htmlspecialchars($img['id']); ?>" class="remove-button">X</a>
-                </div>
-            <?php endwhile; ?>
-        </div>
-
-        <!-- Aviso -->
-        <div class="info-box">
-            Info: Depois de apagares uma foto é normal a informação do produto desaparecer não te preocupes! Dá refresh à página!
-        </div>
+        <!-- Lista de produtos -->
+        <h2>Produtos</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nome</th>
+                    <th>Descrição</th>
+                    <th>Preço</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php while ($produto = $produtos->fetch_assoc()): ?>
+                    <tr>
+                        <td><?php echo htmlspecialchars($produto['id']); ?></td>
+                        <td><?php echo htmlspecialchars($produto['nome']); ?></td>
+                        <td><?php echo htmlspecialchars($produto['descricao']); ?></td>
+                        <td><?php echo htmlspecialchars($produto['preco']); ?></td>
+                        <td>
+                            <a href="editar_produto.php?id=<?php echo htmlspecialchars($produto['id']); ?>" class="edit-button">Editar</a>
+                            <form method="post" action="" style="display: inline;">
+                                <input type="hidden" name="id" value="<?php echo htmlspecialchars($produto['id']); ?>">
+                                <button type="submit" name="delete" class="delete-button">Excluir</button>
+                            </form>
+                        </td>
+                    </tr>
+                <?php endwhile; ?>
+            </tbody>
+        </table>
     </div>
 </body>
 </html>
