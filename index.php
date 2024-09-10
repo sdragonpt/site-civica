@@ -194,14 +194,20 @@
         <?php
         include('config.php'); // Inclua o arquivo de configuração do banco de dados
 
-        // Obter os 6 produtos mais recentes
-        $stmt = $conn->prepare("
-            SELECT * FROM produtos 
-            ORDER BY data_adicionado DESC 
-            LIMIT 6
-        ");
-        $stmt->execute();
-        $produtos_recentes = $stmt->get_result();
+        // Função para obter os produtos recentes com suas imagens
+        function get_produtos_recentes() {
+            global $conn;
+            $sql = "SELECT p.id, p.nome, p.descricao, p.preco, i.imagem 
+                    FROM produtos p
+                    LEFT JOIN imagens i ON p.id = i.produto_id
+                    WHERE i.imagem IS NOT NULL
+                    ORDER BY p.id DESC
+                    LIMIT 5"; // Ajuste o limite conforme necessário
+            return $conn->query($sql);
+        }
+
+        // Obtém os produtos recentes
+        $produtos_recentes = get_produtos_recentes();
         ?>
 
         <div class="content">
