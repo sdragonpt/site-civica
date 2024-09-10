@@ -7,9 +7,28 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
     exit();
 }
 
-include 'config.php'; // Inclui a configuração de conexão com o banco de dados
+include 'config.php';
 
-// Função para carregar as imagens associadas ao produto
+// Função para carregar o produto
+if (!isset($_GET['id'])) {
+    header("Location: admin.php"); // Redireciona se o ID do produto não for fornecido
+    exit();
+}
+$produto_id = $_GET['id'];
+
+// Carrega o produto
+$stmt = $conn->prepare("SELECT * FROM produtos WHERE id = ?");
+$stmt->bind_param("i", $produto_id);
+$stmt->execute();
+$produto = $stmt->get_result()->fetch_assoc();
+$stmt->close();
+
+if (!$produto) {
+    header("Location: admin.php"); // Redireciona se o produto não for encontrado
+    exit();
+}
+
+// Função para carregar imagens associadas ao produto
 function get_imagens($produto_id) {
     global $conn;
     $stmt = $conn->prepare("SELECT * FROM imagens WHERE produto_id = ?");
@@ -18,61 +37,66 @@ function get_imagens($produto_id) {
     return $stmt->get_result();
 }
 
-// Função para remover uma imagem
-if (isset($_GET['remove_image'])) {
-    $imagem_id = $_GET['remove_image'];
-    $produto_id = $_GET['id']; // Captura o ID do produto
-
-    // Obtém o nome do arquivo da imagem
-    $stmt = $conn->prepare("SELECT imagem FROM imagens WHERE id = ?");
-    $stmt->bind_param("i", $imagem_id);
+// Função para carregar categorias associadas ao produto
+function get_categorias($produto_id) {
+    global $conn;
+    $stmt = $conn->prepare("
+        SELECT c.id, c.nome 
+        FROM categorias c 
+        JOIN produto_categoria pc ON c.id = pc.categoria_id 
+        WHERE pc.produto_id = ?");
+    $stmt->bind_param("i", $produto_id);
     $stmt->execute();
-    $result = $stmt->get_result();
-    $imagem = $result->fetch_assoc()['imagem'];
-    $stmt->close();
-
-    // Remove o arquivo da pasta de imagens
-    if (file_exists("images/$imagem")) {
-        unlink("images/$imagem");
-    }
-
-    // Remove a entrada do banco de dados
-    $stmt = $conn->prepare("DELETE FROM imagens WHERE id = ?");
-    $stmt->bind_param("i", $imagem_id);
-    $stmt->execute();
-    $stmt->close();
-
-    header("Location: editar_produto.php?id=$produto_id"); // Redireciona de volta para a página de edição do produto
-    exit();
+    return $stmt->get_result();
 }
 
-// Função para editar produtos
-if (isset($_POST['edit'])) {
-    $id = $_POST['id'];
+// Carrega categorias existentes
+$categorias_result = $conn->query("SELECT * FROM categorias");
+$categorias_produto = get_categorias($produto_id);
+$imagens_produto = get_imagens($produto_id);
+
+// Atualiza o produto
+if (isset($_POST['update'])) {
     $nome = $_POST['nome'];
     $descricao = $_POST['descricao'];
     $preco = $_POST['preco'];
 
-    // Atualiza as informações do produto
+    // Atualiza o produto
     $stmt = $conn->prepare("UPDATE produtos SET nome = ?, descricao = ?, preco = ? WHERE id = ?");
-    $stmt->bind_param("ssii", $nome, $descricao, $preco, $id);
+    $stmt->bind_param("ssii", $nome, $descricao, $preco, $produto_id);
     $stmt->execute();
     $stmt->close();
 
-    // Manipula o upload de imagens
+    // Atualiza categorias associadas
+    $stmt = $conn->prepare("DELETE FROM produto_categoria WHERE produto_id = ?");
+    $stmt->bind_param("i", $produto_id);
+    $stmt->execute();
+    $stmt->close();
+
+    if (isset($_POST['categorias']) && is_array($_POST['categorias'])) {
+        foreach ($_POST['categorias'] as $categoria_id) {
+            $stmt = $conn->prepare("INSERT INTO produto_categoria (produto_id, categoria_id) VALUES (?, ?)");
+            $stmt->bind_param("ii", $produto_id, $categoria_id);
+            $stmt->execute();
+            $stmt->close();
+        }
+    }
+
+    // Manipula o upload de novas imagens
     if (isset($_FILES['imagens']) && $_FILES['imagens']['error'][0] == UPLOAD_ERR_OK) {
         $target_dir = "images/";
         foreach ($_FILES['imagens']['name'] as $key => $name) {
             $target_file = $target_dir . basename($name);
             $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
             $check = getimagesize($_FILES["imagens"]["tmp_name"][$key]);
-            
+
             // Verifica se o arquivo é uma imagem
             if ($check !== false) {
                 if (move_uploaded_file($_FILES["imagens"]["tmp_name"][$key], $target_file)) {
                     $stmt = $conn->prepare("INSERT INTO imagens (produto_id, imagem) VALUES (?, ?)");
-                    $stmt->bind_param("is", $id, $name);
+                    $stmt->bind_param("is", $produto_id, $name);
                     $stmt->execute();
+                    $stmt->close();
                 } else {
                     echo "Desculpe, ocorreu um erro ao fazer upload da imagem.";
                 }
@@ -81,18 +105,42 @@ if (isset($_POST['edit'])) {
             }
         }
     }
+
+    header("Location: admin.php"); // Redireciona após atualização
+    exit();
 }
 
-// Obtém o ID do produto para editar
-$id = isset($_GET['id']) ? intval($_GET['id']) : 0;
-$stmt = $conn->prepare("SELECT * FROM produtos WHERE id = ?");
-$stmt->bind_param("i", $id);
-$stmt->execute();
-$produto = $stmt->get_result()->fetch_assoc();
-$stmt->close();
+// Remove uma imagem
+if (isset($_POST['delete_imagem'])) {
+    $imagem_id = $_POST['imagem_id'];
+    
+    $stmt = $conn->prepare("SELECT imagem FROM imagens WHERE id = ?");
+    $stmt->bind_param("i", $imagem_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $imagem = $result->fetch_assoc()['imagem'];
+    $stmt->close();
+    
+    if (file_exists("images/$imagem")) {
+        unlink("images/$imagem");
+    }
+    
+    $stmt = $conn->prepare("DELETE FROM imagens WHERE id = ?");
+    $stmt->bind_param("i", $imagem_id);
+    $stmt->execute();
+    $stmt->close();
 
-// Obtém as imagens do produto
-$imagens = get_imagens($id);
+    header("Location: editar_produto.php?id=$produto_id"); // Redireciona após exclusão
+    exit();
+}
+
+// Logout
+if (isset($_GET['logout'])) {
+    session_unset();
+    session_destroy();
+    header("Location: login.php");
+    exit();
+}
 ?>
 
 <!DOCTYPE html>
@@ -207,41 +255,67 @@ $imagens = get_imagens($id);
             border-radius: 5px;
             margin-top: 20px;
         }
+        /* Estilos para a página de edição de produtos */
+        /* (Use o mesmo estilo da página admin.php ou ajuste conforme necessário) */
     </style>
 </head>
 <body>
     <div class="admin-container">
-        <button class="back-button" onclick="window.location.href='admin.php'">Voltar</button>
         <button class="logout-button" onclick="window.location.href='admin.php?logout=true'">Logout</button>
-        <h1 style="color: #ffcc00">Editar Produto</h1>
+        <h1>Editar Produto</h1>
 
-        <!-- Formulário para editar produto -->
+        <!-- Formulário para editar o produto -->
+        <h2>Editar Produto</h2>
         <form method="post" action="" enctype="multipart/form-data">
             <div class="form-group">
-                <input type="text" name="id" value="<?php echo htmlspecialchars($produto['id']); ?>" readonly>
-                <input type="text" name="nome" value="<?php echo htmlspecialchars($produto['nome']); ?>" placeholder="Nome">
-                <textarea name="descricao" placeholder="Descrição"><?php echo htmlspecialchars($produto['descricao']); ?></textarea>
-                <input type="text" name="preco" value="<?php echo htmlspecialchars($produto['preco']); ?>" placeholder="Preço">
+                <input type="text" name="nome" value="<?php echo htmlspecialchars($produto['nome']); ?>" placeholder="Nome do Produto" required>
+                <textarea name="descricao" placeholder="Descrição" required><?php echo htmlspecialchars($produto['descricao']); ?></textarea>
+                <input type="text" name="preco" value="<?php echo htmlspecialchars($produto['preco']); ?>" placeholder="Preço" required>
                 <input type="file" name="imagens[]" multiple>
+                
+                <!-- Seção de seleção de categorias -->
+                <h3>
+                    Selecionar Categorias
+                </h3>
+                <div class="category-list">
+                    <?php while ($categoria = $categorias_result->fetch_assoc()): ?>
+                        <label style="border: 1px solid; border-radius: 3px; padding: 4px; font-size: 14px; margin-right: 6px">
+                            <div style="width: 13px; margin: 0px; float: left;">
+                                <input type="checkbox" name="categorias[]" value="<?php echo $categoria['id']; ?>"
+                                <?php
+                                    $categorias_produto->data_seek(0);
+                                    while ($cat_produto = $categorias_produto->fetch_assoc()) {
+                                        if ($categoria['id'] == $cat_produto['id']) {
+                                            echo ' checked';
+                                            break;
+                                        }
+                                    }
+                                ?>>
+                            </div>
+                            <div style="float: left; margin-top: 3px; margin-left: 5px;"><?php echo htmlspecialchars($categoria['nome']); ?></div>
+                        </label>
+                    <?php endwhile; ?>
+                </div>
             </div>
-            <button type="submit" name="edit">Salvar Alterações</button>
+            <button type="submit" name="update">Atualizar Produto</button>
         </form>
 
-        <!-- Exibe as imagens existentes com opção de remoção -->
-        <h2>Imagens Atuais</h2>
+        <!-- Imagens associadas ao produto -->
+        <h2>Imagens do Produto</h2>
         <div>
-            <?php while ($img = $imagens->fetch_assoc()): ?>
-                <div class="image-container">
-                    <img src="images/<?php echo htmlspecialchars($img['imagem']); ?>" alt="Imagem do produto">
-                    <a style="text-decoration: none;" href="editar_produto.php?id=<?php echo htmlspecialchars($produto['id']); ?>&remove_image=<?php echo htmlspecialchars($img['id']); ?>" class="remove-button">X</a>
+            <?php while ($imagem = $imagens_produto->fetch_assoc()): ?>
+                <div style="display: inline-block; position: relative; margin-right: 10px;">
+                    <img src="images/<?php echo htmlspecialchars($imagem['imagem']); ?>" alt="Imagem" style="width: 100px; height: 100px; object-fit: cover;">
+                    <form method="post" action="" style="position: absolute; top: 0; right: 0;">
+                        <input type="hidden" name="imagem_id" value="<?php echo htmlspecialchars($imagem['id']); ?>">
+                        <button type="submit" name="delete_imagem" style="background-color: #ff0000; color: #fff; border: none; padding: 5px;">Excluir</button>
+                    </form>
                 </div>
             <?php endwhile; ?>
         </div>
 
-        <!-- Aviso -->
-        <div class="info-box">
-            Info: Depois de apagares uma foto é normal a informação do produto desaparecer não te preocupes! Dá refresh à página!
-        </div>
+        <!-- Botão de voltar -->
+        <a href="admin.php" style="display: inline-block; margin-top: 20px; text-decoration: none; color: #007bff;">Voltar à Administração</a>
     </div>
 </body>
 </html>
