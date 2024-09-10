@@ -25,6 +25,7 @@ if (isset($_POST['add'])) {
     $preco = $_POST['preco'];
 
     // Manipula o upload de imagens
+    $imagem = '';
     if (isset($_FILES['imagens']) && $_FILES['imagens']['error'][0] == UPLOAD_ERR_OK) {
         $target_dir = "images/";
         foreach ($_FILES['imagens']['name'] as $key => $name) {
@@ -58,6 +59,15 @@ if (isset($_POST['add'])) {
         foreach ($_FILES['imagens']['name'] as $key => $name) {
             $stmt = $conn->prepare("INSERT INTO imagens (produto_id, imagem) VALUES (?, ?)");
             $stmt->bind_param("is", $produto_id, $name);
+            $stmt->execute();
+        }
+    }
+
+    // Associa categorias ao produto
+    if (isset($_POST['categorias'])) {
+        foreach ($_POST['categorias'] as $categoria_id) {
+            $stmt = $conn->prepare("INSERT INTO produto_categoria (produto_id, categoria_id) VALUES (?, ?)");
+            $stmt->bind_param("ii", $produto_id, $categoria_id);
             $stmt->execute();
         }
     }
@@ -97,25 +107,6 @@ if (isset($_POST['add_category'])) {
 
 // Obter categorias existentes
 $categorias_result = $conn->query("SELECT * FROM categorias");
-
-// Obter categorias associadas a cada produto
-function get_categorias_produto($produto_id) {
-    global $conn;
-    $stmt = $conn->prepare("
-        SELECT c.nome 
-        FROM categorias c 
-        JOIN produto_categoria pc ON c.id = pc.categoria_id 
-        WHERE pc.produto_id = ?");
-    $stmt->bind_param("i", $produto_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    $categorias = [];
-    while ($row = $result->fetch_assoc()) {
-        $categorias[] = $row['nome'];
-    }
-    return implode(', ', $categorias);
-}
 
 ?>
 
@@ -213,18 +204,44 @@ function get_categorias_produto($produto_id) {
         .edit-button:hover {
             background-color: #cca700;
         }
-        .manage-category-button {
-            background-color: #004080;
-            color: #fff;
-            text-decoration: none;
+        .category-selector {
+            display: flex;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        .category-box {
             padding: 10px;
+            margin: 5px;
+            border: 1px solid #ddd;
             border-radius: 4px;
             cursor: pointer;
+            background-color: #fff;
+            transition: background-color 0.3s ease;
         }
-        .manage-category-button:hover {
-            background-color: #003366;
+        .category-box.selected {
+            background-color: #00cc00;
+            color: #fff;
         }
     </style>
+    <script>
+        function toggleCategory(categoryBox, categoryId) {
+            categoryBox.classList.toggle('selected');
+            const selectedCategories = document.getElementById('selected_categories');
+            const index = Array.from(selectedCategories.options).findIndex(option => option.value == categoryId);
+            if (categoryBox.classList.contains('selected')) {
+                if (index === -1) {
+                    const option = document.createElement('option');
+                    option.value = categoryId;
+                    option.text = categoryBox.textContent;
+                    selectedCategories.add(option);
+                }
+            } else {
+                if (index !== -1) {
+                    selectedCategories.remove(index);
+                }
+            }
+        }
+    </script>
 </head>
 <body>
     <div class="admin-container">
@@ -235,37 +252,26 @@ function get_categorias_produto($produto_id) {
         <h2>Adicionar Produto</h2>
         <form method="post" action="" enctype="multipart/form-data">
             <div class="form-group">
-                <div><input type="text" name="nome" placeholder="Nome" required></div>
-                <div><textarea name="descricao" placeholder="Descrição"></textarea></div>
-                <div><input type="text" name="preco" placeholder="Preço" required></div>
-                <div><input type="file" name="imagens[]" multiple></div>
-                <div>
-                    <select name="categorias[]" multiple>
-                        <?php while ($categoria = $categorias_result->fetch_assoc()): ?>
-                            <option value="<?php echo $categoria['id']; ?>"><?php echo htmlspecialchars($categoria['nome']); ?></option>
-                        <?php endwhile; ?>
-                    </select>
+                <input type="text" name="nome" placeholder="Nome" required>
+                <textarea name="descricao" placeholder="Descrição" required></textarea>
+                <input type="text" name="preco" placeholder="Preço" required>
+                <input type="file" name="imagens[]" multiple>
+            </div>
+            <div class="form-group">
+                <label for="categorias">Categorias:</label>
+                <div class="category-selector">
+                    <?php while ($categoria = $categorias_result->fetch_assoc()): ?>
+                        <div class="category-box" onclick="toggleCategory(this, <?php echo $categoria['id']; ?>)">
+                            <?php echo htmlspecialchars($categoria['nome']); ?>
+                        </div>
+                    <?php endwhile; ?>
                 </div>
+                <select id="selected_categories" name="categorias[]" multiple style="display: none;"></select>
             </div>
             <button type="submit" name="add">Adicionar Produto</button>
         </form>
 
-        <!-- Formulário para adicionar categorias -->
-        <h2>Adicionar Categoria</h2>
-        <form method="post" action="">
-            <div class="form-group">
-                <div><input type="text" name="nome_categoria" placeholder="Nome da Categoria" required></div>
-            </div>
-            <button type="submit" name="add_category">Adicionar Categoria</button>
-        </form>
-
-        <!-- Botão para gerenciar categorias -->
-        <h2>
-            Categorias
-            <a href="gerenciar_categorias.php" class="manage-category-button">Gerir</a>
-        </h2>
-
-        <!-- Tabela de produtos -->
+        <!-- Lista de produtos -->
         <h2>Produtos</h2>
         <table>
             <thead>
@@ -274,37 +280,24 @@ function get_categorias_produto($produto_id) {
                     <th>Nome</th>
                     <th>Descrição</th>
                     <th>Preço</th>
-                    <th>Imagens</th>
-                    <th>Categorias</th>
                     <th>Ações</th>
                 </tr>
             </thead>
             <tbody>
-                <?php while ($row = $produtos->fetch_assoc()): ?>
-                <tr>
-                    <td><?php echo htmlspecialchars($row['id']); ?></td>
-                    <td><?php echo htmlspecialchars($row['nome']); ?></td>
-                    <td><?php echo htmlspecialchars($row['descricao']); ?></td>
-                    <td><?php echo htmlspecialchars($row['preco']); ?></td>
-                    <td>
-                        <?php
-                        $imagens = get_imagens($row['id']);
-                        while ($img = $imagens->fetch_assoc()) {
-                            echo '<img src="images/' . htmlspecialchars($img['imagem']) . '" alt="' . htmlspecialchars($row['nome']) . '" style="width: 100px; margin-right: 5px;">';
-                        }
-                        ?>
-                    </td>
-                    <td><?php echo get_categorias_produto($row['id']); ?></td>
-                    <td>
-                        <!-- Formulário para deletar produto -->
-                        <form method="post" action="" style="display:inline;">
-                            <input type="hidden" name="id" value="<?php echo htmlspecialchars($row['id']); ?>">
-                            <button type="submit" name="delete" class="delete-button">Deletar</button>
-                        </form>
-                        <!-- Link para edição -->
-                        <a style="text-decoration: none;" href="editar_produto.php?id=<?php echo htmlspecialchars($row['id']); ?>" class="edit-button">Editar</a>
-                    </td>
-                </tr>
+                <?php while ($produto = $produtos->fetch_assoc()): ?>
+                    <tr>
+                        <td><?php echo htmlspecialchars($produto['id']); ?></td>
+                        <td><?php echo htmlspecialchars($produto['nome']); ?></td>
+                        <td><?php echo htmlspecialchars($produto['descricao']); ?></td>
+                        <td><?php echo htmlspecialchars($produto['preco']); ?></td>
+                        <td>
+                            <a href="editar_produto.php?id=<?php echo htmlspecialchars($produto['id']); ?>" class="edit-button">Editar</a>
+                            <form method="post" action="" style="display: inline;">
+                                <input type="hidden" name="id" value="<?php echo htmlspecialchars($produto['id']); ?>">
+                                <button type="submit" name="delete" class="delete-button">Excluir</button>
+                            </form>
+                        </td>
+                    </tr>
                 <?php endwhile; ?>
             </tbody>
         </table>
