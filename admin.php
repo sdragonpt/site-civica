@@ -173,6 +173,7 @@ function get_imagens($produto_id) {
             border: none;
             border-radius: 4px;
             cursor: pointer;
+            font-size: 13px;
         }
         .delete-button {
             background-color: #ff0000;
