@@ -263,5 +263,5 @@ $categorias_result = $conn->query("SELECT * FROM categorias");
             </tbody>
         </table>
     </div>
-</body>
+</body>resr
 </html>
