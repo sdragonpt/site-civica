@@ -128,6 +128,27 @@ if (isset($_POST['add_category'])) {
 // Obter categorias existentes
 $categorias_result = $conn->query("SELECT * FROM categorias");
 
+// Função para adicionar categorias
+if (isset($_POST['add_category'])) {
+    $nome_categoria = $_POST['nome_categoria'];
+    $stmt = $conn->prepare("INSERT INTO categorias (nome) VALUES (?)");
+    
+    if ($stmt === false) {
+        die('Erro ao preparar a declaração: ' . $conn->error);
+    }
+    
+    $stmt->bind_param("s", $nome_categoria);
+    
+    if ($stmt->execute()) {
+        echo "Categoria adicionada com sucesso.";
+    } else {
+        echo "Erro ao adicionar categoria: " . $stmt->error;
+    }
+    
+    $stmt->close();
+}
+
+
 // Logout
 if (isset($_GET['logout'])) {
     session_unset();
