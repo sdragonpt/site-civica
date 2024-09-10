@@ -53,6 +53,15 @@ if (isset($_POST['add'])) {
     $stmt->execute();
     $produto_id = $stmt->insert_id;
     $stmt->close();
+    
+    // Manipula a associação das imagens ao produto
+    if (isset($_FILES['imagens']) && $_FILES['imagens']['error'][0] == UPLOAD_ERR_OK) {
+        foreach ($_FILES['imagens']['name'] as $key => $name) {
+            $stmt = $conn->prepare("INSERT INTO imagens (produto_id, imagem) VALUES (?, ?)");
+            $stmt->bind_param("is", $produto_id, $name);
+            $stmt->execute();
+        }
+    }
 }
 
 // Função para procurar produtos
@@ -197,6 +206,7 @@ function get_imagens($produto_id) {
             </div>
             <button type="submit" name="add">Adicionar Produto</button>
         </form>
+
 
         <!-- Formulário para procurar produtos -->
         <h2>Procurar Produtos</h2>
