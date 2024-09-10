@@ -172,6 +172,25 @@
                 margin-top: 40px;
             }
         }
+
+        /* Estilo para botões de categorias */
+        .category-buttons {
+            margin-top: 20px;
+        }
+
+        .category-buttons a {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 5px;
+            background-color: #ff6600;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+
+        .category-buttons a:hover {
+            background-color: #cc5200;
+        }
     </style>
 </head>
 <body>
@@ -224,28 +243,42 @@
             </div>
         </div>
 
-        <?php
-        // Obter todas as categorias
-        $categorias_result = $conn->query("SELECT * FROM categorias");
+        <!-- Botões de categorias -->
+        <div class="category-buttons">
+            <?php
+            // Obter todas as categorias
+            $categorias_result = $conn->query("SELECT * FROM categorias");
+            while ($categoria = $categorias_result->fetch_assoc()): 
+                $categoria_nome = htmlspecialchars($categoria['nome']);
+                $categoria_id = htmlspecialchars($categoria['id']);
+            ?>
+                <a href="#<?php echo $categoria_nome; ?>"><?php echo $categoria_nome; ?></a>
+            <?php endwhile; ?>
+        </div>
 
-        // Exibir produtos por categorias
+        <!-- Exibir produtos por categorias -->
+        <?php
+        $categorias_result->data_seek(0); // Resetar o ponteiro do resultado para reusar a variável
+
         while ($categoria = $categorias_result->fetch_assoc()): 
             $categoria_id = $categoria['id'];
-            $categoria_nome = $categoria['nome'];
+            $categoria_nome = htmlspecialchars($categoria['nome']);
 
             // Obter produtos para a categoria atual
             $stmt = $conn->prepare("
-                SELECT p.* 
+                SELECT p.*, i.imagem 
                 FROM produtos p
                 INNER JOIN produto_categoria pc ON p.id = pc.produto_id
+                LEFT JOIN imagens i ON p.id = i.produto_id
                 WHERE pc.categoria_id = ?
+                AND i.imagem IS NOT NULL
             ");
             $stmt->bind_param("i", $categoria_id);
             $stmt->execute();
             $produtos_result = $stmt->get_result();
         ?>
-            <div class="content" id="<?php echo htmlspecialchars($categoria_nome); ?>">
-                <h2><?php echo htmlspecialchars($categoria_nome); ?></h2>
+            <div class="content" id="<?php echo $categoria_nome; ?>">
+                <h2><?php echo $categoria_nome; ?></h2>
                 <div class="product-list">
                     <?php while ($produto = $produtos_result->fetch_assoc()): ?>
                         <div class="product-item">
@@ -292,3 +325,4 @@
     </div>
 </body>
 </html>
+
