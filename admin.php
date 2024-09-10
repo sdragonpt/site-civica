@@ -23,7 +23,26 @@ if (isset($_POST['add'])) {
     $nome = $_POST['nome'];
     $descricao = $_POST['descricao'];
     $preco = $_POST['preco'];
-    $imagem = $_POST['imagem'];
+    
+    // Manipula o upload de imagem
+    $imagem = '';
+    if (isset($_FILES['imagem']) && $_FILES['imagem']['error'] == UPLOAD_ERR_OK) {
+        $target_dir = "uploads/";
+        $target_file = $target_dir . basename($_FILES["imagem"]["name"]);
+        $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
+        $check = getimagesize($_FILES["imagem"]["tmp_name"]);
+        
+        // Verifica se o arquivo é uma imagem
+        if ($check !== false) {
+            if (move_uploaded_file($_FILES["imagem"]["tmp_name"], $target_file)) {
+                $imagem = basename($_FILES["imagem"]["name"]);
+            } else {
+                echo "Desculpe, ocorreu um erro ao fazer upload da imagem.";
+            }
+        } else {
+            echo "O arquivo não é uma imagem.";
+        }
+    }
 
     $stmt = $conn->prepare("INSERT INTO produtos (nome, descricao, preco, imagem) VALUES (?, ?, ?, ?)");
     $stmt->bind_param("ssis", $nome, $descricao, $preco, $imagem);
@@ -37,7 +56,26 @@ if (isset($_POST['edit'])) {
     $nome = $_POST['nome'];
     $descricao = $_POST['descricao'];
     $preco = $_POST['preco'];
-    $imagem = $_POST['imagem'];
+
+    // Manipula o upload de imagem
+    $imagem = $_POST['existing_imagem']; // Mantém a imagem existente
+    if (isset($_FILES['imagem']) && $_FILES['imagem']['error'] == UPLOAD_ERR_OK) {
+        $target_dir = "uploads/";
+        $target_file = $target_dir . basename($_FILES["imagem"]["name"]);
+        $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
+        $check = getimagesize($_FILES["imagem"]["tmp_name"]);
+        
+        // Verifica se o arquivo é uma imagem
+        if ($check !== false) {
+            if (move_uploaded_file($_FILES["imagem"]["tmp_name"], $target_file)) {
+                $imagem = basename($_FILES["imagem"]["name"]);
+            } else {
+                echo "Desculpe, ocorreu um erro ao fazer upload da imagem.";
+            }
+        } else {
+            echo "O arquivo não é uma imagem.";
+        }
+    }
 
     $stmt = $conn->prepare("UPDATE produtos SET nome = ?, descricao = ?, preco = ?, imagem = ? WHERE id = ?");
     $stmt->bind_param("ssisi", $nome, $descricao, $preco, $imagem, $id);
@@ -108,8 +146,8 @@ if (isset($_GET['logout'])) {
             margin-bottom: 15px;
         }
         .form-group input, .form-group textarea {
-            width: 40%;
-            padding: 10px;
+            width: 100%;
+            padding: 8px;
             margin: 5px 0;
             border: 1px solid #ddd;
             border-radius: 4px;
@@ -160,25 +198,26 @@ if (isset($_GET['logout'])) {
         
         <!-- Formulário para adicionar produtos -->
         <h2>Adicionar Produto</h2>
-        <form method="post" action="">
+        <form method="post" action="" enctype="multipart/form-data">
             <div class="form-group">
                 <input type="text" name="nome" placeholder="Nome" required>
                 <textarea name="descricao" placeholder="Descrição"></textarea>
                 <input type="text" name="preco" placeholder="Preço" required>
-                <input type="text" name="imagem" placeholder="Imagem">
+                <input type="file" name="imagem">
             </div>
             <button type="submit" name="add">Adicionar Produto</button>
         </form>
 
         <!-- Formulário para editar produtos -->
         <h2>Editar Produto</h2>
-        <form method="post" action="">
+        <form method="post" action="" enctype="multipart/form-data">
             <div class="form-group">
                 <input type="text" name="id" placeholder="ID do Produto" required>
                 <input type="text" name="nome" placeholder="Nome">
                 <textarea name="descricao" placeholder="Descrição"></textarea>
                 <input type="text" name="preco" placeholder="Preço">
-                <input type="text" name="imagem" placeholder="Imagem">
+                <input type="file" name="imagem">
+                <input type="hidden" name="existing_imagem" value="<?php echo isset($row['imagem']) ? htmlspecialchars($row['imagem']) : ''; ?>">
             </div>
             <button type="submit" name="edit">Editar Produto</button>
         </form>
@@ -212,7 +251,7 @@ if (isset($_GET['logout'])) {
                     <td><?php echo htmlspecialchars($row['nome']); ?></td>
                     <td><?php echo htmlspecialchars($row['descricao']); ?></td>
                     <td><?php echo htmlspecialchars($row['preco']); ?></td>
-                    <td><?php echo htmlspecialchars($row['imagem']); ?></td>
+                    <td><img src="uploads/<?php echo htmlspecialchars($row['imagem']); ?>" alt="<?php echo htmlspecialchars($row['nome']); ?>" style="width: 100px;"></td>
                     <td>
                         <!-- Formulário para deletar produto -->
                         <form method="post" action="" style="display:inline;">
