@@ -281,7 +281,7 @@ $categorias_result = get_all_categorias();
                 <label>Categorias:</label>
                 <div class="category-list">
                     <?php while ($categoria = $categorias_result->fetch_assoc()): ?>
-                        <label>
+                        <label style="border: 1px solid; border-radius: 3px; padding: 4px; font-size: 14px; margin-right: 6px">
                         <div style="width: 13px; margin: 0px; float: left;"><input type="checkbox" name="categorias[]" value="<?php echo htmlspecialchars($categoria['id']); ?>"
                             <?php if (in_array($categoria['id'], array_column($categorias_produto->fetch_all(MYSQLI_ASSOC), 'id'))): ?>
                                 checked
