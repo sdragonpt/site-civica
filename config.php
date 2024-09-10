@@ -1,5 +1,5 @@
 <?php
-$servername = "mysql.civica.pt";
+$servername = "localhost";
 $username = "admin";
 $password = "3(dy09qCno-3";
 $dbname = "civica2018_backoffice-db";
