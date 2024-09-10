@@ -9,63 +9,47 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 
 include 'config.php'; // Inclui a configuração de conexão com o banco de dados
 
-// Função para obter todas as categorias
-function get_categorias() {
-    global $conn;
-    return $conn->query("SELECT * FROM categorias");
-}
-
-// Função para adicionar uma nova categoria
+// Função para adicionar categorias
 if (isset($_POST['add_category'])) {
-    $nome = $_POST['nome'];
-
-    // Insere a nova categoria
+    $nome_categoria = $_POST['nome_categoria'];
     $stmt = $conn->prepare("INSERT INTO categorias (nome) VALUES (?)");
-    $stmt->bind_param("s", $nome);
+    $stmt->bind_param("s", $nome_categoria);
     $stmt->execute();
     $stmt->close();
-
-    header("Location: gerenciar_categorias.php");
-    exit();
 }
 
-// Função para editar uma categoria
+// Função para editar categorias
 if (isset($_POST['edit_category'])) {
     $id = $_POST['id'];
-    $nome = $_POST['nome'];
-
-    // Atualiza a categoria
+    $nome_categoria = $_POST['nome_categoria'];
     $stmt = $conn->prepare("UPDATE categorias SET nome = ? WHERE id = ?");
-    $stmt->bind_param("si", $nome, $id);
+    $stmt->bind_param("si", $nome_categoria, $id);
     $stmt->execute();
     $stmt->close();
-
-    header("Location: gerenciar_categorias.php");
-    exit();
 }
 
-// Função para excluir uma categoria
-if (isset($_POST['delete_category'])) {
-    $id = $_POST['id'];
-
-    // Remove as associações da categoria com produtos
-    $stmt = $conn->prepare("DELETE FROM produto_categoria WHERE categoria_id = ?");
-    $stmt->bind_param("i", $id);
-    $stmt->execute();
-    $stmt->close();
-
-    // Remove a categoria
+// Função para remover categorias
+if (isset($_GET['delete_category'])) {
+    $id = $_GET['delete_category'];
     $stmt = $conn->prepare("DELETE FROM categorias WHERE id = ?");
     $stmt->bind_param("i", $id);
     $stmt->execute();
     $stmt->close();
-
-    header("Location: gerenciar_categorias.php");
-    exit();
 }
 
-// Obtém categorias existentes
-$categorias = get_categorias();
+// Obtém todas as categorias
+$categorias_result = $conn->query("SELECT * FROM categorias");
+
+// Obtém o ID da categoria para editar
+$id_categoria = isset($_GET['edit_category']) ? intval($_GET['edit_category']) : 0;
+$categoria = [];
+if ($id_categoria > 0) {
+    $stmt = $conn->prepare("SELECT * FROM categorias WHERE id = ?");
+    $stmt->bind_param("i", $id_categoria);
+    $stmt->execute();
+    $categoria = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+}
 ?>
 
 <!DOCTYPE html>
@@ -75,7 +59,6 @@ $categorias = get_categorias();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gerenciar Categorias - Civica</title>
     <style>
-        /* Adicione seu estilo aqui */
         body {
             font-family: Arial, sans-serif;
             background-color: #f4f4f4;
@@ -91,7 +74,9 @@ $categorias = get_categorias();
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             position: relative;
         }
-        .logout-button, .edit-button, .delete-button {
+        .logout-button, .back-button {
+            position: absolute;
+            top: 20px;
             padding: 10px 20px;
             background-color: #333;
             border: none;
@@ -99,13 +84,19 @@ $categorias = get_categorias();
             color: #fff;
             cursor: pointer;
         }
-        .edit-button:hover, .delete-button:hover {
-            background-color: #ff6600;
+        .back-button {
+            right: 120px;
+        }
+        .logout-button {
+            right: 20px;
+        }
+        .back-button:hover, .logout-button:hover {
+            background-color: #333;
         }
         .form-group {
             margin-bottom: 15px;
         }
-        .form-group input, .form-group textarea {
+        .form-group input {
             width: 100%;
             padding: 8px;
             margin: 5px 0;
@@ -132,43 +123,55 @@ $categorias = get_categorias();
             border: 1px solid #ddd;
         }
         th, td {
-            padding: 8px;
+            padding: 10px;
             text-align: left;
         }
         th {
-            background-color: #f2f2f2;
+            background-color: #f4f4f4;
+        }
+        .delete-button, .edit-button {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
         }
         .delete-button {
             background-color: #ff0000;
+            color: #fff;
         }
         .delete-button:hover {
             background-color: #cc0000;
         }
-        .info-box {
-            background-color: #e0f7fa; /* Azul suave */
-            border: 1px solid #b2ebf2;
-            padding: 10px;
-            border-radius: 5px;
-            margin-top: 20px;
+        .edit-button {
+            background-color: #ffcc00;
+            color: #fff;
+        }
+        .edit-button:hover {
+            background-color: #cca700;
         }
     </style>
 </head>
 <body>
     <div class="admin-container">
+        <button class="back-button" onclick="window.location.href='admin.php'">Voltar</button>
         <button class="logout-button" onclick="window.location.href='admin.php?logout=true'">Logout</button>
-        <h1>Gerenciar Categorias</h1>
+        <h1 style="color: #ffcc00">Gerenciar Categorias</h1>
 
-        <!-- Formulário para adicionar categoria -->
-        <h2>Adicionar Categoria</h2>
+        <!-- Formulário para adicionar ou editar categorias -->
+        <h2><?php echo $id_categoria > 0 ? 'Editar Categoria' : 'Adicionar Categoria'; ?></h2>
         <form method="post" action="">
             <div class="form-group">
-                <input type="text" name="nome" placeholder="Nome da Categoria" required>
+                <input type="hidden" name="id" value="<?php echo htmlspecialchars($id_categoria); ?>">
+                <input type="text" name="nome_categoria" value="<?php echo htmlspecialchars($categoria['nome'] ?? ''); ?>" placeholder="Nome da Categoria" required>
             </div>
-            <button type="submit" name="add_category">Adicionar Categoria</button>
+            <button type="submit" name="<?php echo $id_categoria > 0 ? 'edit_category' : 'add_category'; ?>">
+                <?php echo $id_categoria > 0 ? 'Salvar Alterações' : 'Adicionar Categoria'; ?>
+            </button>
         </form>
 
-        <!-- Lista de categorias -->
-        <h2>Categorias Existentes</h2>
+        <!-- Tabela de categorias -->
+        <h2>Categorias</h2>
         <table>
             <thead>
                 <tr>
@@ -178,47 +181,20 @@ $categorias = get_categorias();
                 </tr>
             </thead>
             <tbody>
-                <?php while ($categoria = $categorias->fetch_assoc()): ?>
-                    <tr>
-                        <td><?php echo htmlspecialchars($categoria['id']); ?></td>
-                        <td><?php echo htmlspecialchars($categoria['nome']); ?></td>
-                        <td>
-                            <button class="edit-button" onclick="editCategory(<?php echo $categoria['id']; ?>, '<?php echo htmlspecialchars($categoria['nome']); ?>')">Editar</button>
-                            <form method="post" action="" style="display:inline;">
-                                <input type="hidden" name="id" value="<?php echo $categoria['id']; ?>">
-                                <button class="delete-button" type="submit" name="delete_category">Excluir</button>
-                            </form>
-                        </td>
-                    </tr>
+                <?php while ($row = $categorias_result->fetch_assoc()): ?>
+                <tr>
+                    <td><?php echo htmlspecialchars($row['id']); ?></td>
+                    <td><?php echo htmlspecialchars($row['nome']); ?></td>
+                    <td>
+                        <!-- Link para editar categoria -->
+                        <a href="gerenciar_categorias.php?edit_category=<?php echo htmlspecialchars($row['id']); ?>" class="edit-button">Editar</a>
+                        <!-- Link para deletar categoria -->
+                        <a href="gerenciar_categorias.php?delete_category=<?php echo htmlspecialchars($row['id']); ?>" class="delete-button" onclick="return confirm('Tem certeza de que deseja excluir esta categoria?');">Deletar</a>
+                    </td>
+                </tr>
                 <?php endwhile; ?>
             </tbody>
         </table>
-
-        <!-- Aviso -->
-        <div class="info-box">
-            Info: Após adicionar, editar ou excluir categorias, a página pode precisar ser atualizada para refletir as mudanças.
-        </div>
     </div>
-
-    <!-- Formulário de edição (oculto inicialmente) -->
-    <div id="edit_category_modal" style="display:none;">
-        <h2>Editar Categoria</h2>
-        <form method="post" action="">
-            <input type="hidden" id="edit_category_id" name="id">
-            <div class="form-group">
-                <input type="text" id="edit_category_name" name="nome" required>
-            </div>
-            <button type="submit" name="edit_category">Salvar Alterações</button>
-            <button type="button" onclick="document.getElementById('edit_category_modal').style.display='none'">Cancelar</button>
-        </form>
-    </div>
-
-    <script>
-        function editCategory(id, name) {
-            document.getElementById('edit_category_id').value = id;
-            document.getElementById('edit_category_name').value = name;
-            document.getElementById('edit_category_modal').style.display = 'block';
-        }
-    </script>
 </body>
 </html>
