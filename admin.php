@@ -252,7 +252,7 @@ function get_imagens($produto_id) {
                             <button type="submit" name="delete" class="delete-button">Deletar</button>
                         </form>
                         <!-- Link para edição -->
-                        <a href="editar_produto.php?id=<?php echo htmlspecialchars($row['id']); ?>" class="edit-button">Editar</a>
+                        <a style="text-decoration: none;" href="editar_produto.php?id=<?php echo htmlspecialchars($row['id']); ?>" class="edit-button">Editar</a>
                     </td>
                 </tr>
                 <?php endwhile; ?>
