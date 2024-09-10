@@ -78,7 +78,8 @@
         .product-list {
             display: flex;
             flex-wrap: wrap;
-            justify-content: space-around;
+            gap: 20px; /* Espaçamento entre os cards */
+            justify-content: space-between;
         }
 
         .product-item {
@@ -87,7 +88,7 @@
             border-radius: 5px;
             padding: 10px;
             margin: 10px;
-            width: 30%;
+            width: calc(25% - 20px); /* 4 cards por linha, com espaço entre eles */
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
 
@@ -238,6 +239,7 @@
                         <h3><?php echo htmlspecialchars($produto['nome']); ?></h3>
                         <p><?php echo htmlspecialchars($produto['descricao']); ?></p>
                         <p>Preço: €<?php echo htmlspecialchars($produto['preco']); ?></p>
+                        <button>Ver Mais</button> <!-- Botão para ações futuras -->
                     </div>
                 <?php endwhile; ?>
             </div>
@@ -312,7 +314,11 @@
 
                 <div class="about">
                     <h3>Sobre Nós</h3>
-                    <p>Especializados na importação, exportação e comercialização de maquinaria e equipamentos.</p>
+                    <p>Cívica - Construções, Engenharia e Equipamentos, Lda</p>
+                    <p>Sociedade por Quotas</p>
+                    <p>Capital Social 100.000,00€</p>
+                    <p>NIF/EORI: PT 504 117 246</p>
+                    <p>Alvará: nº 43194</p>
                 </div>
             </div>
 
