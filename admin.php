@@ -9,93 +9,16 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 
 include 'config.php'; // Inclui a configuração de conexão com o banco de dados
 
-// Função para lidar com a exclusão de produtos
-if (isset($_POST['delete'])) {
-    $id = $_POST['id'];
-    $stmt = $conn->prepare("DELETE FROM produtos WHERE id = ?");
-    $stmt->bind_param("i", $id);
-    $stmt->execute();
-    $stmt->close();
-}
+// Verifica se há um termo de busca
+$searchTerm = isset($_GET['search']) ? $_GET['search'] : '';
 
-// Função para adicionar produtos
-if (isset($_POST['add'])) {
-    $nome = $_POST['nome'];
-    $descricao = $_POST['descricao'];
-    $preco = $_POST['preco'];
-
-    // Manipula o upload de imagens
-    $imagem = '';
-    if (isset($_FILES['imagens']) && $_FILES['imagens']['error'][0] == UPLOAD_ERR_OK) {
-        $target_dir = "images/";
-        foreach ($_FILES['imagens']['name'] as $key => $name) {
-            $target_file = $target_dir . basename($name);
-            $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
-            $check = getimagesize($_FILES["imagens"]["tmp_name"][$key]);
-            
-            // Verifica se o arquivo é uma imagem
-            if ($check !== false) {
-                if (move_uploaded_file($_FILES["imagens"]["tmp_name"][$key], $target_file)) {
-                    $stmt = $conn->prepare("INSERT INTO imagens (produto_id, imagem) VALUES (?, ?)");
-                    $stmt->bind_param("is", $produto_id, $name);
-                    $stmt->execute();
-                } else {
-                    echo "Desculpe, ocorreu um erro ao fazer upload da imagem.";
-                }
-            } else {
-                echo "O arquivo não é uma imagem.";
-            }
-        }
-    }
-
-    $stmt = $conn->prepare("INSERT INTO produtos (nome, descricao, preco) VALUES (?, ?, ?)");
-    $stmt->bind_param("ssi", $nome, $descricao, $preco);
-    $stmt->execute();
-    $produto_id = $stmt->insert_id;
-    $stmt->close();
-    
-    // Manipula a associação das imagens ao produto
-    if (isset($_FILES['imagens']) && $_FILES['imagens']['error'][0] == UPLOAD_ERR_OK) {
-        foreach ($_FILES['imagens']['name'] as $key => $name) {
-            $stmt = $conn->prepare("INSERT INTO imagens (produto_id, imagem) VALUES (?, ?)");
-            $stmt->bind_param("is", $produto_id, $name);
-            $stmt->execute();
-        }
-    }
-}
-
-// Função para procurar produtos
-$search = '';
-if (isset($_POST['search'])) {
-    $search = $_POST['search'];
-    $stmt = $conn->prepare("SELECT * FROM produtos WHERE nome LIKE ?");
-    $stmt->bind_param("s", $search);
-    $search = "%$search%";
-} else {
-    $stmt = $conn->prepare("SELECT * FROM produtos");
-}
-
-// Executa a consulta
+// Prepara a consulta para buscar produtos
+$query = "SELECT * FROM produtos WHERE nome LIKE ? OR descricao LIKE ?";
+$stmt = $conn->prepare($query);
+$searchTermLike = "%" . $searchTerm . "%";
+$stmt->bind_param("ss", $searchTermLike, $searchTermLike);
 $stmt->execute();
-$produtos = $stmt->get_result();
-$stmt->close();
-
-// Logout
-if (isset($_GET['logout'])) {
-    session_unset();
-    session_destroy();
-    header("Location: login.php");
-    exit();
-}
-
-// Carregar imagens associadas ao produto
-function get_imagens($produto_id) {
-    global $conn;
-    $stmt = $conn->prepare("SELECT * FROM imagens WHERE produto_id = ?");
-    $stmt->bind_param("i", $produto_id);
-    $stmt->execute();
-    return $stmt->get_result();
-}
+$result = $stmt->get_result();
 ?>
 
 <!DOCTYPE html>
@@ -110,36 +33,18 @@ function get_imagens($produto_id) {
             background-color: #f4f4f4;
             margin: 0;
             padding: 20px;
-            margin-right: 10%;
-            margin-left: 10%;
         }
         .admin-container {
             background-color: #fff;
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            position: relative;
-        }
-        .logout-button {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            padding: 10px 20px;
-            background-color: #ff6600;
-            border: none;
-            border-radius: 4px;
-            color: #fff;
-            cursor: pointer;
-        }
-        .logout-button:hover {
-            background-color: #cc5200;
         }
         .form-group {
             margin-bottom: 15px;
         }
         .form-group input, .form-group textarea {
             width: 100%;
-            max-width: 300px;
             padding: 8px;
             margin: 5px 0;
             border: 1px solid #ddd;
@@ -171,58 +76,35 @@ function get_imagens($produto_id) {
         th {
             background-color: #f4f4f4;
         }
-        .delete-button, .edit-button {
-            padding: 5px 10px;
+        .back-button, .logout-button {
+            padding: 10px 20px;
+            background-color: #ff6600;
             border: none;
             border-radius: 4px;
+            color: #fff;
             cursor: pointer;
-            font-size: 13px;
         }
-        .delete-button {
-            background-color: #ff0000;
-            color: #fff;
+        .back-button {
+            margin-right: 10px;
         }
-        .delete-button:hover {
-            background-color: #cc0000;
-        }
-        .edit-button {
-            background-color: #ffcc00;
-            color: #fff;
-        }
-        .edit-button:hover {
-            background-color: #cca700;
+        .back-button:hover, .logout-button:hover {
+            background-color: #cc5200;
         }
     </style>
 </head>
 <body>
     <div class="admin-container">
+        <button class="back-button" onclick="window.location.href='admin.php'">Voltar</button>
         <button class="logout-button" onclick="window.location.href='admin.php?logout=true'">Logout</button>
-        <h1>Gerenciar Produtos</h1>
+        <h1>Produtos</h1>
 
-        <!-- Formulário para adicionar produtos -->
-        <h2>Adicionar Produto</h2>
-        <form method="post" action="" enctype="multipart/form-data">
-            <div class="form-group">
-                <div><input type="text" name="nome" placeholder="Nome" required></div>
-                <div><textarea name="descricao" placeholder="Descrição"></textarea></div>
-                <div><input type="text" name="preco" placeholder="Preço" required></div>
-                <div><input type="file" name="imagens[]" multiple></div>
-            </div>
-            <button type="submit" name="add">Adicionar Produto</button>
+        <!-- Formulário de busca -->
+        <form method="get" action="admin.php">
+            <input type="text" name="search" placeholder="Pesquisar produtos" value="<?php echo htmlspecialchars($searchTerm); ?>">
+            <button type="submit">Buscar</button>
         </form>
 
-
-        <!-- Formulário para procurar produtos -->
-        <h2>Procurar Produtos</h2>
-        <form method="post" action="">
-            <div class="form-group">
-                <input type="text" name="search" placeholder="Nome do Produto">
-            </div>
-            <button type="submit" name="search">Buscar</button>
-        </form>
-
-        <!-- Tabela de produtos -->
-        <h2>Produtos</h2>
+        <!-- Lista de produtos -->
         <table>
             <thead>
                 <tr>
@@ -230,35 +112,18 @@ function get_imagens($produto_id) {
                     <th>Nome</th>
                     <th>Descrição</th>
                     <th>Preço</th>
-                    <th>Imagens</th>
                     <th>Ações</th>
                 </tr>
             </thead>
             <tbody>
-                <?php while ($row = $produtos->fetch_assoc()): ?>
-                <tr>
-                    <td><?php echo htmlspecialchars($row['id']); ?></td>
-                    <td><?php echo htmlspecialchars($row['nome']); ?></td>
-                    <td><?php echo htmlspecialchars($row['descricao']); ?></td>
-                    <td><?php echo htmlspecialchars($row['preco']); ?></td>
-                    <td>
-                        <?php
-                        $imagens = get_imagens($row['id']);
-                        while ($img = $imagens->fetch_assoc()) {
-                            echo '<img src="images/' . htmlspecialchars($img['imagem']) . '" alt="' . htmlspecialchars($row['nome']) . '" style="width: 100px; margin-right: 5px;">';
-                        }
-                        ?>
-                    </td>
-                    <td>
-                        <!-- Formulário para deletar produto -->
-                        <form method="post" action="" style="display:inline;">
-                            <input type="hidden" name="id" value="<?php echo htmlspecialchars($row['id']); ?>">
-                            <button type="submit" name="delete" class="delete-button">Deletar</button>
-                        </form>
-                        <!-- Link para edição -->
-                        <a style="text-decoration: none;" href="editar_produto.php?id=<?php echo htmlspecialchars($row['id']); ?>" class="edit-button">Editar</a>
-                    </td>
-                </tr>
+                <?php while ($produto = $result->fetch_assoc()): ?>
+                    <tr>
+                        <td><?php echo htmlspecialchars($produto['id']); ?></td>
+                        <td><?php echo htmlspecialchars($produto['nome']); ?></td>
+                        <td><?php echo htmlspecialchars($produto['descricao']); ?></td>
+                        <td><?php echo htmlspecialchars($produto['preco']); ?></td>
+                        <td><a href="editar_produto.php?id=<?php echo htmlspecialchars($produto['id']); ?>">Editar</a></td>
+                    </tr>
                 <?php endwhile; ?>
             </tbody>
         </table>
