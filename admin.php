@@ -110,6 +110,8 @@ function get_imagens($produto_id) {
             background-color: #f4f4f4;
             margin: 0;
             padding: 20px;
+            margin-right: 10%;
+            margin-left: 10%;
         }
         .admin-container {
             background-color: #fff;
@@ -136,7 +138,7 @@ function get_imagens($produto_id) {
             margin-bottom: 15px;
         }
         .form-group input, .form-group textarea {
-            width: 100%;
+            margin-right: 30%;
             padding: 8px;
             margin: 5px 0;
             border: 1px solid #ddd;
