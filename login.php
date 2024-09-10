@@ -1,5 +1,4 @@
 <?php
-session_start(); // Inicia a sessão
 include 'config.php'; // Inclui a configuração de conexão com o banco de dados
 
 // Inicializa a variável de erro
