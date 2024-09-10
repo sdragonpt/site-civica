@@ -3,42 +3,53 @@ session_start();
 
 // Verifica se o usuário está autenticado
 if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
-    header("Location: login.php"); // Redireciona para login.php se não estiver autenticado
+    header("Location: login.php");
     exit();
 }
 
 include 'config.php'; // Inclui a configuração de conexão com o banco de dados
 
-// Verifica se o ID do produto foi passado
-if (!isset($_GET['id'])) {
-    header("Location: admin.php"); // Redireciona de volta para a página de administração se o ID não estiver presente
+// Carregar imagens associadas ao produto
+function get_imagens($produto_id) {
+    global $conn;
+    $stmt = $conn->prepare("SELECT * FROM imagens WHERE produto_id = ?");
+    $stmt->bind_param("i", $produto_id);
+    $stmt->execute();
+    return $stmt->get_result();
+}
+
+// Excluir imagem
+if (isset($_GET['delete_image'])) {
+    $image_id = $_GET['delete_image'];
+    $stmt = $conn->prepare("DELETE FROM imagens WHERE id = ?");
+    $stmt->bind_param("i", $image_id);
+    $stmt->execute();
+    $stmt->close();
+    header("Location: editar_produto.php?id=" . $_GET['produto_id']);
     exit();
 }
 
-$id = $_GET['id'];
-
-// Busca o produto a ser editado
-$stmt = $conn->prepare("SELECT * FROM produtos WHERE id = ?");
-$stmt->bind_param("i", $id);
-$stmt->execute();
-$produto = $stmt->get_result()->fetch_assoc();
-$stmt->close();
-
-// Função para lidar com a atualização do produto
+// Atualizar produto
 if (isset($_POST['update'])) {
+    $id = $_POST['id'];
     $nome = $_POST['nome'];
     $descricao = $_POST['descricao'];
     $preco = $_POST['preco'];
 
-    // Manipula o upload de imagens
+    // Atualiza o produto
+    $stmt = $conn->prepare("UPDATE produtos SET nome = ?, descricao = ?, preco = ? WHERE id = ?");
+    $stmt->bind_param("ssii", $nome, $descricao, $preco, $id);
+    $stmt->execute();
+    $stmt->close();
+
+    // Adiciona novas imagens
     if (isset($_FILES['imagens']) && $_FILES['imagens']['error'][0] == UPLOAD_ERR_OK) {
         $target_dir = "images/";
         foreach ($_FILES['imagens']['name'] as $key => $name) {
             $target_file = $target_dir . basename($name);
             $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
             $check = getimagesize($_FILES["imagens"]["tmp_name"][$key]);
-            
-            // Verifica se o arquivo é uma imagem
+
             if ($check !== false) {
                 if (move_uploaded_file($_FILES["imagens"]["tmp_name"][$key], $target_file)) {
                     $stmt = $conn->prepare("INSERT INTO imagens (produto_id, imagem) VALUES (?, ?)");
@@ -52,24 +63,19 @@ if (isset($_POST['update'])) {
             }
         }
     }
+}
 
-    $stmt = $conn->prepare("UPDATE produtos SET nome = ?, descricao = ?, preco = ? WHERE id = ?");
-    $stmt->bind_param("ssii", $nome, $descricao, $preco, $id);
-    $stmt->execute();
-    $stmt->close();
-    
-    header("Location: admin.php"); // Redireciona para a página de administração após a atualização
+if (!isset($_GET['id'])) {
+    echo "ID do produto não fornecido.";
     exit();
 }
 
-// Carregar imagens associadas ao produto
-function get_imagens($produto_id) {
-    global $conn;
-    $stmt = $conn->prepare("SELECT * FROM imagens WHERE produto_id = ?");
-    $stmt->bind_param("i", $produto_id);
-    $stmt->execute();
-    return $stmt->get_result();
-}
+$id = $_GET['id'];
+$stmt = $conn->prepare("SELECT * FROM produtos WHERE id = ?");
+$stmt->bind_param("i", $id);
+$stmt->execute();
+$produto = $stmt->get_result()->fetch_assoc();
+$stmt->close();
 ?>
 
 <!DOCTYPE html>
@@ -79,53 +85,42 @@ function get_imagens($produto_id) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Editar Produto - Civica</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 20px;
-        }
-        .admin-container {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-group input, .form-group textarea {
-            width: 100%;
-            padding: 8px;
-            margin: 5px 0;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        .form-group button {
-            padding: 10px 20px;
-            background-color: #ff6600;
-            border: none;
-            border-radius: 4px;
-            color: #fff;
-            cursor: pointer;
-        }
-        .form-group button:hover {
-            background-color: #cc5200;
-        }
+        /* Adicione seu estilo aqui */
     </style>
 </head>
 <body>
-    <div class="admin-container">
-        <h1>Editar Produto</h1>
-        <form method="post" action="" enctype="multipart/form-data">
-            <div class="form-group">
-                <input type="text" name="nome" value="<?php echo htmlspecialchars($produto['nome']); ?>" placeholder="Nome" required>
-                <textarea name="descricao" placeholder="Descrição"><?php echo htmlspecialchars($produto['descricao']); ?></textarea>
-                <input type="text" name="preco" value="<?php echo htmlspecialchars($produto['preco']); ?>" placeholder="Preço" required>
-                <input type="file" name="imagens[]" multiple>
-            </div>
-            <button type="submit" name="update">Atualizar Produto</button>
-        </form>
-    </div>
+    <h1>Editar Produto</h1>
+    <form method="post" action="" enctype="multipart/form-data">
+        <input type="hidden" name="id" value="<?php echo htmlspecialchars($produto['id']); ?>">
+        <div>
+            <label for="nome">Nome:</label>
+            <input type="text" id="nome" name="nome" value="<?php echo htmlspecialchars($produto['nome']); ?>" required>
+        </div>
+        <div>
+            <label for="descricao">Descrição:</label>
+            <textarea id="descricao" name="descricao"><?php echo htmlspecialchars($produto['descricao']); ?></textarea>
+        </div>
+        <div>
+            <label for="preco">Preço:</label>
+            <input type="text" id="preco" name="preco" value="<?php echo htmlspecialchars($produto['preco']); ?>" required>
+        </div>
+
+        <h2>Imagens Existentes</h2>
+        <?php
+        $imagens = get_imagens($id);
+        while ($img = $imagens->fetch_assoc()) {
+            echo '<div style="display:inline-block; position:relative; margin-right:10px;">
+                    <img src="images/' . htmlspecialchars($img['imagem']) . '" alt="' . htmlspecialchars($produto['nome']) . '" style="width:100px;">
+                    <a href="editar_produto.php?id=' . htmlspecialchars($id) . '&delete_image=' . htmlspecialchars($img['id']) . '" style="position:absolute; top:0; right:0; color:red;">&times;</a>
+                  </div>';
+        }
+        ?>
+
+        <div>
+            <label for="imagens">Adicionar Imagens:</label>
+            <input type="file" id="imagens" name="imagens[]" multiple>
+        </div>
+        <button type="submit" name="update">Atualizar Produto</button>
+    </form>
 </body>
 </html>
