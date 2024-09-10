@@ -9,7 +9,22 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 
 include 'config.php'; // Inclui a configuração de conexão com o banco de dados
 
-// Função para carregar imagens associadas ao produto
+// Função para obter produtos
+function get_produtos() {
+    global $conn;
+    return $conn->query("SELECT * FROM produtos");
+}
+
+// Função para obter categorias associadas ao produto
+function get_categorias($produto_id) {
+    global $conn;
+    $stmt = $conn->prepare("SELECT c.* FROM categorias c JOIN produto_categoria pc ON c.id = pc.categoria_id WHERE pc.produto_id = ?");
+    $stmt->bind_param("i", $produto_id);
+    $stmt->execute();
+    return $stmt->get_result();
+}
+
+// Função para obter imagens associadas ao produto
 function get_imagens($produto_id) {
     global $conn;
     $stmt = $conn->prepare("SELECT * FROM imagens WHERE produto_id = ?");
@@ -18,20 +33,35 @@ function get_imagens($produto_id) {
     return $stmt->get_result();
 }
 
-// Função para carregar categorias associadas ao produto
-function get_categorias($produto_id) {
-    global $conn;
-    $stmt = $conn->prepare("
-        SELECT c.* 
-        FROM categorias c 
-        JOIN produto_categoria pc ON c.id = pc.categoria_id 
-        WHERE pc.produto_id = ?");
+// Função para excluir um produto
+if (isset($_POST['delete'])) {
+    $produto_id = $_POST['id'];
+
+    // Remove imagens associadas ao produto
+    $imagens = get_imagens($produto_id);
+    while ($imagem = $imagens->fetch_assoc()) {
+        if (file_exists("images/" . $imagem['imagem'])) {
+            unlink("images/" . $imagem['imagem']);
+        }
+    }
+
+    // Remove as categorias associadas ao produto
+    $stmt = $conn->prepare("DELETE FROM produto_categoria WHERE produto_id = ?");
     $stmt->bind_param("i", $produto_id);
     $stmt->execute();
-    return $stmt->get_result();
+    $stmt->close();
+
+    // Remove o produto
+    $stmt = $conn->prepare("DELETE FROM produtos WHERE id = ?");
+    $stmt->bind_param("i", $produto_id);
+    $stmt->execute();
+    $stmt->close();
+
+    header("Location: admin.php");
+    exit();
 }
 
-// Função para adicionar produtos
+// Adicionar produto
 if (isset($_POST['add'])) {
     $nome = $_POST['nome'];
     $descricao = $_POST['descricao'];
@@ -77,64 +107,10 @@ if (isset($_POST['add'])) {
     }
 }
 
-// Função para excluir produtos
-if (isset($_POST['delete'])) {
-    $produto_id = $_POST['id'];
-
-    // Remove imagens associadas
-    $stmt = $conn->prepare("SELECT imagem FROM imagens WHERE produto_id = ?");
-    $stmt->bind_param("i", $produto_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    while ($img = $result->fetch_assoc()) {
-        $imagem = $img['imagem'];
-        if (file_exists("images/$imagem")) {
-            unlink("images/$imagem");
-        }
-    }
-    $stmt->close();
-
-    // Remove categorias associadas
-    $stmt = $conn->prepare("DELETE FROM produto_categoria WHERE produto_id = ?");
-    $stmt->bind_param("i", $produto_id);
-    $stmt->execute();
-    $stmt->close();
-
-    // Remove o produto
-    $stmt = $conn->prepare("DELETE FROM produtos WHERE id = ?");
-    $stmt->bind_param("i", $produto_id);
-    $stmt->execute();
-    $stmt->close();
-
-    header("Location: admin.php"); // Redireciona de volta para admin.php
-    exit();
-}
-
-// Função para procurar produtos
-$stmt = $conn->prepare("SELECT * FROM produtos");
-$stmt->execute();
-$produtos = $stmt->get_result();
-$stmt->close();
-
-// Função para adicionar categorias
-if (isset($_POST['add_category'])) {
-    $nome_categoria = $_POST['nome_categoria'];
-    $stmt = $conn->prepare("INSERT INTO categorias (nome) VALUES (?)");
-    $stmt->bind_param("s", $nome_categoria);
-    $stmt->execute();
-    $stmt->close();
-}
-
-// Obter categorias existentes
+// Obtém produtos e categorias existentes
+$produtos = get_produtos();
 $categorias_result = $conn->query("SELECT * FROM categorias");
 
-// Logout
-if (isset($_GET['logout'])) {
-    session_unset();
-    session_destroy();
-    header("Location: login.php");
-    exit();
-}
 ?>
 
 <!DOCTYPE html>
@@ -144,13 +120,14 @@ if (isset($_GET['logout'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Civica</title>
     <style>
+        /* Adicione seu estilo aqui */
         body {
             font-family: Arial, sans-serif;
             background-color: #f4f4f4;
             margin: 0;
             padding: 20px;
-            margin-right: 10%;
-            margin-left: 10%;
+            margin-left: 20%;
+            margin-right: 20%;
         }
         .admin-container {
             background-color: #fff;
@@ -159,10 +136,7 @@ if (isset($_GET['logout'])) {
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             position: relative;
         }
-        .logout-button {
-            position: absolute;
-            top: 20px;
-            right: 20px;
+        .logout-button, .edit-button, .delete-button {
             padding: 10px 20px;
             background-color: #333;
             border: none;
@@ -170,15 +144,14 @@ if (isset($_GET['logout'])) {
             color: #fff;
             cursor: pointer;
         }
-        .logout-button:hover {
-            background-color: #cc5200;
+        .edit-button:hover, .delete-button:hover {
+            background-color: #ff6600;
         }
         .form-group {
             margin-bottom: 15px;
         }
         .form-group input, .form-group textarea {
             width: 100%;
-            max-width: 300px;
             padding: 8px;
             margin: 5px 0;
             border: 1px solid #ddd;
@@ -193,7 +166,26 @@ if (isset($_GET['logout'])) {
             cursor: pointer;
         }
         .form-group button:hover {
-            background-color: #cc5200;
+            background-color: #333;
+        }
+        .category-selector {
+            display: flex;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        .category-box {
+            padding: 10px;
+            margin: 5px;
+            background-color: #e0e0e0;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .category-box.selected {
+            background-color: #00cc00;
+            color: #fff;
+        }
+        .category-box:hover {
+            background-color: #cccccc;
         }
         table {
             width: 100%;
@@ -204,50 +196,17 @@ if (isset($_GET['logout'])) {
             border: 1px solid #ddd;
         }
         th, td {
-            padding: 10px;
+            padding: 8px;
             text-align: left;
         }
         th {
-            background-color: #f4f4f4;
-        }
-        .delete-button, .edit-button {
-            padding: 5px 10px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 13px;
+            background-color: #f2f2f2;
         }
         .delete-button {
             background-color: #ff0000;
-            color: #fff;
         }
         .delete-button:hover {
             background-color: #cc0000;
-        }
-        .edit-button {
-            background-color: #ffcc00;
-            color: #fff;
-        }
-        .edit-button:hover {
-            background-color: #cca700;
-        }
-        .category-selector {
-            display: flex;
-            flex-wrap: wrap;
-            margin-top: 10px;
-        }
-        .category-box {
-            padding: 10px;
-            margin: 5px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            cursor: pointer;
-            background-color: #fff;
-            transition: background-color 0.3s ease;
-        }
-        .category-box.selected {
-            background-color: #00cc00;
-            color: #fff;
         }
         .info-box {
             background-color: #e0f7fa; /* Azul suave */
@@ -299,7 +258,7 @@ if (isset($_GET['logout'])) {
                             </div>
                         <?php endwhile; ?>
                     </div>
-                    <select id="selected_categories" name="categorias[]" multiple style="display: none;"></select>
+                    <select id="selected_categories" name="categorias[]" multiple style="display:none;"></select>
                 </div>
             </div>
             <button type="submit" name="add">Adicionar Produto</button>
@@ -314,37 +273,39 @@ if (isset($_GET['logout'])) {
                     <th>Nome</th>
                     <th>Descrição</th>
                     <th>Preço</th>
-                    <th>Categorias</th>
                     <th>Imagens</th>
+                    <th>Categorias</th>
                     <th>Ações</th>
                 </tr>
             </thead>
             <tbody>
                 <?php while ($produto = $produtos->fetch_assoc()): ?>
-                    <?php
-                    $categorias_produto = get_categorias($produto['id']);
-                    $imagens_produto = get_imagens($produto['id']);
-                    ?>
                     <tr>
                         <td><?php echo htmlspecialchars($produto['id']); ?></td>
                         <td><?php echo htmlspecialchars($produto['nome']); ?></td>
                         <td><?php echo htmlspecialchars($produto['descricao']); ?></td>
                         <td><?php echo htmlspecialchars($produto['preco']); ?></td>
                         <td>
-                            <?php while ($categoria = $categorias_produto->fetch_assoc()): ?>
-                                <?php echo htmlspecialchars($categoria['nome']) . '<br>'; ?>
+                            <?php 
+                                $imagens = get_imagens($produto['id']);
+                                while ($imagem = $imagens->fetch_assoc()): 
+                            ?>
+                                <img src="images/<?php echo htmlspecialchars($imagem['imagem']); ?>" alt="Imagem do produto" style="width: 100px; height: 100px; object-fit: cover;">
                             <?php endwhile; ?>
                         </td>
                         <td>
-                            <?php while ($imagem = $imagens_produto->fetch_assoc()): ?>
-                                <img src="images/<?php echo htmlspecialchars($imagem['imagem']); ?>" alt="Imagem" style="width: 50px; height: 50px; object-fit: cover; margin-right: 5px;">
+                            <?php 
+                                $categorias = get_categorias($produto['id']);
+                                while ($categoria = $categorias->fetch_assoc()): 
+                            ?>
+                                <?php echo htmlspecialchars($categoria['nome']); ?><br>
                             <?php endwhile; ?>
                         </td>
                         <td>
-                            <a href="editar_produto.php?id=<?php echo htmlspecialchars($produto['id']); ?>" class="edit-button">Editar</a>
-                            <form method="post" action="" style="display: inline;">
-                                <input type="hidden" name="id" value="<?php echo htmlspecialchars($produto['id']); ?>">
-                                <button type="submit" name="delete" class="delete-button">Excluir</button>
+                            <button class="edit-button" onclick="window.location.href='editar_produto.php?id=<?php echo $produto['id']; ?>'">Editar</button>
+                            <form method="post" action="" style="display:inline;">
+                                <input type="hidden" name="id" value="<?php echo $produto['id']; ?>">
+                                <button class="delete-button" type="submit" name="delete">Excluir</button>
                             </form>
                         </td>
                     </tr>
@@ -352,8 +313,10 @@ if (isset($_GET['logout'])) {
             </tbody>
         </table>
         
-        <!-- Gerenciar Categorias -->
-        <h2>Categorias <a href="gerenciar_categorias.php" class="edit-button">Gerir</a></h2>
+        <!-- Aviso -->
+        <div class="info-box">
+            Info: Após adicionar ou excluir produtos, a página pode precisar ser atualizada para refletir as mudanças.
+        </div>
     </div>
 </body>
 </html>
