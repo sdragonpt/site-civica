@@ -203,10 +203,10 @@ function get_imagens($produto_id) {
         <h2>Adicionar Produto</h2>
         <form method="post" action="" enctype="multipart/form-data">
             <div class="form-group">
-                <input type="text" name="nome" placeholder="Nome" required>
-                <textarea name="descricao" placeholder="Descrição"></textarea>
-                <input type="text" name="preco" placeholder="Preço" required>
-                <input type="file" name="imagens[]" multiple>
+                <div><input type="text" name="nome" placeholder="Nome" required></div>
+                <div><textarea name="descricao" placeholder="Descrição"></textarea></div>
+                <div><input type="text" name="preco" placeholder="Preço" required></div>
+                <div><input type="file" name="imagens[]" multiple></div>
             </div>
             <button type="submit" name="add">Adicionar Produto</button>
         </form>
