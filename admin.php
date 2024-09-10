@@ -251,7 +251,7 @@ if (isset($_GET['logout'])) {
                     <td><?php echo htmlspecialchars($row['nome']); ?></td>
                     <td><?php echo htmlspecialchars($row['descricao']); ?></td>
                     <td><?php echo htmlspecialchars($row['preco']); ?></td>
-                    <td><img src="uploads/<?php echo htmlspecialchars($row['imagem']); ?>" alt="<?php echo htmlspecialchars($row['nome']); ?>" style="width: 100px;"></td>
+                    <td><img src="images/<?php echo htmlspecialchars($row['imagem']); ?>" alt="<?php echo htmlspecialchars($row['nome']); ?>" style="width: 100px;"></td>
                     <td>
                         <!-- Formulário para deletar produto -->
                         <form method="post" action="" style="display:inline;">
