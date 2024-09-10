@@ -65,17 +65,7 @@ if (isset($_POST['add'])) {
 }
 
 // Função para procurar produtos
-$search = '';
-if (isset($_POST['search'])) {
-    $search = $_POST['search'];
-    $stmt = $conn->prepare("SELECT * FROM produtos WHERE nome LIKE ?");
-    $stmt->bind_param("s", $search);
-    $search = "%$search%";
-} else {
-    $stmt = $conn->prepare("SELECT * FROM produtos");
-}
-
-// Executa a consulta
+$stmt = $conn->prepare("SELECT * FROM produtos");
 $stmt->execute();
 $produtos = $stmt->get_result();
 $stmt->close();
@@ -209,16 +199,6 @@ function get_imagens($produto_id) {
                 <div><input type="file" name="imagens[]" multiple></div>
             </div>
             <button type="submit" name="add">Adicionar Produto</button>
-        </form>
-
-
-        <!-- Formulário para procurar produtos -->
-        <h2>Procurar Produtos</h2>
-        <form method="post" action="">
-            <div class="form-group">
-                <input type="text" name="search" placeholder="Nome do Produto">
-            </div>
-            <button type="submit" name="search">Buscar</button>
         </form>
 
         <!-- Tabela de produtos -->
