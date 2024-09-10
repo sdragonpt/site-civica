@@ -244,7 +244,7 @@
         </div>
 
         <!-- Botões de categorias -->
-        <div class="category-buttons">
+        <div class="category-buttons" id="categorias">
             <?php
             // Obter todas as categorias
             $categorias_result = $conn->query("SELECT * FROM categorias");
