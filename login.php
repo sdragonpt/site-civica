@@ -2,7 +2,9 @@
 session_start(); // Inicia a sessão
 include 'config.php'; // Inclui a configuração de conexão com o banco de dados
 
-// Verifica se o formulário foi enviado
+// Inicializa a variável de erro
+$error = '';
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $username = $_POST['username'];
     $password = $_POST['password'];
@@ -21,7 +23,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $_SESSION['loggedin'] = true;
             $_SESSION['username'] = $username; // Armazena o nome de usuário na sessão
             header("Location: admin.php"); // Redireciona para admin.php
-            exit();
+            exit(); // Garante que o script pare após o redirecionamento
         } else {
             $error = "Senha incorreta";
         }
@@ -87,8 +89,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <body>
     <div class="login-container">
         <h2>Login</h2>
-        <?php if (isset($error)): ?>
-            <div class="error-message"><?php echo $error; ?></div>
+        <?php if (!empty($error)): ?>
+            <div class="error-message"><?php echo htmlspecialchars($error); ?></div>
         <?php endif; ?>
         <form method="post" action="">
             <input type="text" name="username" placeholder="Usuário" required>
