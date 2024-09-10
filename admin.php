@@ -41,7 +41,7 @@ if (isset($_POST['add'])) {
     $stmt = $conn->prepare("INSERT INTO produtos (nome, descricao, preco) VALUES (?, ?, ?)");
     $stmt->bind_param("ssi", $nome, $descricao, $preco);
     $stmt->execute();
-    $produto_id = $stmt->insert_id;
+    $produto_id = $stmt->insert_id; // Obtém o ID do produto inserido
     $stmt->close();
 
     // Associa categorias ao produto
@@ -49,7 +49,9 @@ if (isset($_POST['add'])) {
         foreach ($_POST['categorias'] as $categoria_id) {
             $stmt = $conn->prepare("INSERT INTO produto_categoria (produto_id, categoria_id) VALUES (?, ?)");
             $stmt->bind_param("ii", $produto_id, $categoria_id);
-            $stmt->execute();
+            if (!$stmt->execute()) {
+                echo "Erro ao associar categoria ao produto: " . $stmt->error;
+            }
         }
     }
 
@@ -66,7 +68,9 @@ if (isset($_POST['add'])) {
                 if (move_uploaded_file($_FILES["imagens"]["tmp_name"][$key], $target_file)) {
                     $stmt = $conn->prepare("INSERT INTO imagens (produto_id, imagem) VALUES (?, ?)");
                     $stmt->bind_param("is", $produto_id, $name);
-                    $stmt->execute();
+                    if (!$stmt->execute()) {
+                        echo "Erro ao salvar imagem no banco de dados: " . $stmt->error;
+                    }
                 } else {
                     echo "Desculpe, ocorreu um erro ao fazer upload da imagem.";
                 }
@@ -75,11 +79,19 @@ if (isset($_POST['add'])) {
             }
         }
     }
+
+    echo "Produto adicionado com sucesso!";
 }
 
 // Função para excluir produtos
 if (isset($_POST['delete'])) {
     $produto_id = $_POST['id'];
+
+    // Remove o produto da tabela produto_categoria
+    $stmt = $conn->prepare("DELETE FROM produto_categoria WHERE produto_id = ?");
+    $stmt->bind_param("i", $produto_id);
+    $stmt->execute();
+    $stmt->close();
 
     // Remove imagens associadas
     $stmt = $conn->prepare("SELECT imagem FROM imagens WHERE produto_id = ?");
@@ -94,60 +106,24 @@ if (isset($_POST['delete'])) {
     }
     $stmt->close();
 
-    // Remove categorias associadas
-    $stmt = $conn->prepare("DELETE FROM produto_categoria WHERE produto_id = ?");
-    $stmt->bind_param("i", $produto_id);
-    $stmt->execute();
-    $stmt->close();
-
     // Remove o produto
     $stmt = $conn->prepare("DELETE FROM produtos WHERE id = ?");
     $stmt->bind_param("i", $produto_id);
     $stmt->execute();
     $stmt->close();
 
-    header("Location: admin.php"); // Redireciona de volta para admin.php
+    header("Location: admin.php");
     exit();
 }
 
-// Função para procurar produtos
+// Função para carregar categorias existentes
+$categorias_result = $conn->query("SELECT * FROM categorias");
+
+// Função para buscar todos os produtos
 $stmt = $conn->prepare("SELECT * FROM produtos");
 $stmt->execute();
 $produtos = $stmt->get_result();
 $stmt->close();
-
-// Função para adicionar categorias
-if (isset($_POST['add_category'])) {
-    $nome_categoria = $_POST['nome_categoria'];
-    $stmt = $conn->prepare("INSERT INTO categorias (nome) VALUES (?)");
-    $stmt->bind_param("s", $nome_categoria);
-    $stmt->execute();
-    $stmt->close();
-}
-
-// Obter categorias existentes
-$categorias_result = $conn->query("SELECT * FROM categorias");
-
-// Função para adicionar categorias
-if (isset($_POST['add_category'])) {
-    $nome_categoria = $_POST['nome_categoria'];
-    $stmt = $conn->prepare("INSERT INTO categorias (nome) VALUES (?)");
-    
-    if ($stmt === false) {
-        die('Erro ao preparar a declaração: ' . $conn->error);
-    }
-    
-    $stmt->bind_param("s", $nome_categoria);
-    
-    if ($stmt->execute()) {
-        echo "Categoria adicionada com sucesso.";
-    } else {
-        echo "Erro ao adicionar categoria: " . $stmt->error;
-    }
-    
-    $stmt->close();
-}
-
 
 // Logout
 if (isset($_GET['logout'])) {
@@ -269,13 +245,6 @@ if (isset($_GET['logout'])) {
         .category-box.selected {
             background-color: #00cc00;
             color: #fff;
-        }
-        .info-box {
-            background-color: #e0f7fa; /* Azul suave */
-            border: 1px solid #b2ebf2;
-            padding: 10px;
-            border-radius: 5px;
-            margin-top: 20px;
         }
     </style>
     <script>
