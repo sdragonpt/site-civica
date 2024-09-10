@@ -188,6 +188,25 @@
             footer .social {
                 margin-top: 40px;
             }
+
+            /* Estilo para botões de categorias */
+            .category-buttons {
+                margin-top: 20px;
+            }
+
+            .category-buttons a {
+                display: inline-block;
+                padding: 10px 20px;
+                margin: 5px;
+                background-color: #ff6600;
+                color: #fff;
+                text-decoration: none;
+                border-radius: 4px;
+            }
+
+            .category-buttons a:hover {
+                background-color: #cc5200;
+            }
         }
     </style>
 </head>
@@ -242,22 +261,17 @@
             </div>
         </div>
 
-        <!-- Botões de Navegação para Categorias -->
-        <div class="content">
-            <h2>Categorias</h2>
-            <div class="category-buttons" id="categorias">
-                <?php
-                // Obter todas as categorias
-                $categorias_result = $conn->query("SELECT * FROM categorias");
-                while ($categoria = $categorias_result->fetch_assoc()): 
-                    $categoria_id = $categoria['id'];
-                    $categoria_nome = $categoria['nome'];
-                ?>
-                    <a href="#<?php echo htmlspecialchars($categoria_nome); ?>" class="category-button">
-                        <?php echo htmlspecialchars($categoria_nome); ?>
-                    </a>
-                <?php endwhile; ?>
-            </div>
+        <!-- Botões de categorias -->
+        <div class="category-buttons">
+            <?php
+            // Obter todas as categorias
+            $categorias_result = $conn->query("SELECT * FROM categorias");
+            while ($categoria = $categorias_result->fetch_assoc()): 
+                $categoria_nome = htmlspecialchars($categoria['nome']);
+                $categoria_id = htmlspecialchars($categoria['id']);
+            ?>
+                <a href="#<?php echo $categoria_nome; ?>"><?php echo $categoria_nome; ?></a>
+            <?php endwhile; ?>
         </div>
 
         <!-- Produtos por Categorias -->
