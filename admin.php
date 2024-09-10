@@ -68,25 +68,17 @@ if (isset($_POST['add'])) {
 $search = '';
 if (isset($_POST['search'])) {
     $search = $_POST['search'];
-    if ($search != '') {
-        $stmt = $conn->prepare("SELECT * FROM produtos WHERE nome LIKE ?");
-        $search = "%$search%";
-        $stmt->bind_param("s", $search);
-    } else {
-        $stmt = $conn->prepare("SELECT * FROM produtos");
-    }
+    $stmt = $conn->prepare("SELECT * FROM produtos WHERE nome LIKE ?");
+    $stmt->bind_param("s", $search);
+    $search = "%$search%";
 } else {
     $stmt = $conn->prepare("SELECT * FROM produtos");
 }
 
 // Executa a consulta
-if ($stmt) {
-    $stmt->execute();
-    $produtos = $stmt->get_result();
-    $stmt->close();
-} else {
-    echo "Erro na preparação da consulta: " . $conn->error;
-}
+$stmt->execute();
+$produtos = $stmt->get_result();
+$stmt->close();
 
 // Logout
 if (isset($_GET['logout'])) {
@@ -211,19 +203,20 @@ function get_imagens($produto_id) {
         <h2>Adicionar Produto</h2>
         <form method="post" action="" enctype="multipart/form-data">
             <div class="form-group">
-                <input type="text" name="nome" placeholder="Nome" required>
-                <textarea name="descricao" placeholder="Descrição"></textarea>
-                <input type="text" name="preco" placeholder="Preço" required>
-                <input type="file" name="imagens[]" multiple>
+                <div><input type="text" name="nome" placeholder="Nome" required></div>
+                <div><textarea name="descricao" placeholder="Descrição"></textarea></div>
+                <div><input type="text" name="preco" placeholder="Preço" required></div>
+                <div><input type="file" name="imagens[]" multiple></div>
             </div>
             <button type="submit" name="add">Adicionar Produto</button>
         </form>
+
 
         <!-- Formulário para procurar produtos -->
         <h2>Procurar Produtos</h2>
         <form method="post" action="">
             <div class="form-group">
-                <input type="text" name="search" placeholder="Nome do Produto" value="<?php echo htmlspecialchars($search); ?>">
+                <input type="text" name="search" placeholder="Nome do Produto">
             </div>
             <button type="submit" name="search">Buscar</button>
         </form>
@@ -242,35 +235,31 @@ function get_imagens($produto_id) {
                 </tr>
             </thead>
             <tbody>
-                <?php if ($produtos->num_rows > 0): ?>
-                    <?php while ($row = $produtos->fetch_assoc()): ?>
-                    <tr>
-                        <td><?php echo htmlspecialchars($row['id']); ?></td>
-                        <td><?php echo htmlspecialchars($row['nome']); ?></td>
-                        <td><?php echo htmlspecialchars($row['descricao']); ?></td>
-                        <td><?php echo htmlspecialchars($row['preco']); ?></td>
-                        <td>
-                            <?php
-                            $imagens = get_imagens($row['id']);
-                            while ($img = $imagens->fetch_assoc()) {
-                                echo '<img src="images/' . htmlspecialchars($img['imagem']) . '" alt="' . htmlspecialchars($row['nome']) . '" style="width: 100px; margin-right: 5px;">';
-                            }
-                            ?>
-                        </td>
-                        <td>
-                            <!-- Formulário para deletar produto -->
-                            <form method="post" action="" style="display:inline;">
-                                <input type="hidden" name="id" value="<?php echo htmlspecialchars($row['id']); ?>">
-                                <button type="submit" name="delete" class="delete-button">Deletar</button>
-                            </form>
-                            <!-- Link para edição -->
-                            <a style="text-decoration: none;" href="editar_produto.php?id=<?php echo htmlspecialchars($row['id']); ?>" class="edit-button">Editar</a>
-                        </td>
-                    </tr>
-                    <?php endwhile; ?>
-                <?php else: ?>
-                    <tr><td colspan="6">Nenhum produto encontrado.</td></tr>
-                <?php endif; ?>
+                <?php while ($row = $produtos->fetch_assoc()): ?>
+                <tr>
+                    <td><?php echo htmlspecialchars($row['id']); ?></td>
+                    <td><?php echo htmlspecialchars($row['nome']); ?></td>
+                    <td><?php echo htmlspecialchars($row['descricao']); ?></td>
+                    <td><?php echo htmlspecialchars($row['preco']); ?></td>
+                    <td>
+                        <?php
+                        $imagens = get_imagens($row['id']);
+                        while ($img = $imagens->fetch_assoc()) {
+                            echo '<img src="images/' . htmlspecialchars($img['imagem']) . '" alt="' . htmlspecialchars($row['nome']) . '" style="width: 100px; margin-right: 5px;">';
+                        }
+                        ?>
+                    </td>
+                    <td>
+                        <!-- Formulário para deletar produto -->
+                        <form method="post" action="" style="display:inline;">
+                            <input type="hidden" name="id" value="<?php echo htmlspecialchars($row['id']); ?>">
+                            <button type="submit" name="delete" class="delete-button">Deletar</button>
+                        </form>
+                        <!-- Link para edição -->
+                        <a style="text-decoration: none;" href="editar_produto.php?id=<?php echo htmlspecialchars($row['id']); ?>" class="edit-button">Editar</a>
+                    </td>
+                </tr>
+                <?php endwhile; ?>
             </tbody>
         </table>
     </div>
