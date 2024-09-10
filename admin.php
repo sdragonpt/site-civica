@@ -60,7 +60,7 @@ if (isset($_POST['edit'])) {
     // Manipula o upload de imagem
     $imagem = $_POST['existing_imagem']; // Mantém a imagem existente
     if (isset($_FILES['imagem']) && $_FILES['imagem']['error'] == UPLOAD_ERR_OK) {
-        $target_dir = "uploads/";
+        $target_dir = "images/";
         $target_file = $target_dir . basename($_FILES["imagem"]["name"]);
         $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
         $check = getimagesize($_FILES["imagem"]["tmp_name"]);
