@@ -21,6 +21,9 @@ function get_imagens($produto_id) {
 // Função para remover uma imagem
 if (isset($_GET['remove_image'])) {
     $imagem_id = $_GET['remove_image'];
+    $produto_id = $_GET['produto_id']; // Captura o ID do produto
+
+    // Obtém o nome do arquivo da imagem
     $stmt = $conn->prepare("SELECT imagem FROM imagens WHERE id = ?");
     $stmt->bind_param("i", $imagem_id);
     $stmt->execute();
@@ -39,7 +42,7 @@ if (isset($_GET['remove_image'])) {
     $stmt->execute();
     $stmt->close();
 
-    header("Location: editar_produto.php?id=" . $_GET['produto_id']);
+    header("Location: editar_produto.php?id=$produto_id"); // Redireciona de volta para a página de edição do produto
     exit();
 }
 
@@ -165,14 +168,19 @@ $imagens = get_imagens($id);
         }
         .remove-button {
             position: absolute;
-            top: 0;
-            right: 0;
+            top: 5px;
+            right: 5px;
             background-color: #ff0000;
             color: #fff;
             border: none;
             padding: 5px;
-            border-radius: 0 0 0 5px;
+            border-radius: 50%;
             cursor: pointer;
+            font-size: 14px;
+            width: 20px;
+            height: 20px;
+            text-align: center;
+            line-height: 20px;
         }
         .remove-button:hover {
             background-color: #cc0000;
