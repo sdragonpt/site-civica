@@ -3,11 +3,11 @@ session_start();
 
 // Verifica se o usuário está autenticado
 if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
-    header("Location: login.php"); // Redireciona para login.php se não estiver autenticado
+    header("Location: login.php");
     exit();
 }
 
-include 'config.php'; // Inclui a configuração de conexão com o banco de dados
+include 'config.php';
 
 // Função para lidar com a exclusão de produtos
 if (isset($_POST['delete'])) {
@@ -24,35 +24,35 @@ if (isset($_POST['add'])) {
     $descricao = $_POST['descricao'];
     $preco = $_POST['preco'];
 
+    // Adiciona o produto
+    $stmt = $conn->prepare("INSERT INTO produtos (nome, descricao, preco) VALUES (?, ?, ?)");
+    $stmt->bind_param("ssi", $nome, $descricao, $preco);
+    $stmt->execute();
+    $produto_id = $stmt->insert_id;
+    $stmt->close();
+
     // Manipula o upload de imagens
-    $imagem = '';
     if (isset($_FILES['imagens']) && $_FILES['imagens']['error'][0] == UPLOAD_ERR_OK) {
         $target_dir = "images/";
         foreach ($_FILES['imagens']['name'] as $key => $name) {
             $target_file = $target_dir . basename($name);
             $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
             $check = getimagesize($_FILES["imagens"]["tmp_name"][$key]);
-            
-            // Verifica se o arquivo é uma imagem
+
             if ($check !== false) {
                 if (move_uploaded_file($_FILES["imagens"]["tmp_name"][$key], $target_file)) {
                     $stmt = $conn->prepare("INSERT INTO imagens (produto_id, imagem) VALUES (?, ?)");
                     $stmt->bind_param("is", $produto_id, $name);
                     $stmt->execute();
+                    $stmt->close();
                 } else {
-                    echo "Desculpe, ocorreu um erro ao fazer upload da imagem.";
+                    echo "Erro ao fazer upload da imagem.";
                 }
             } else {
                 echo "O arquivo não é uma imagem.";
             }
         }
     }
-
-    $stmt = $conn->prepare("INSERT INTO produtos (nome, descricao, preco) VALUES (?, ?, ?)");
-    $stmt->bind_param("ssi", $nome, $descricao, $preco);
-    $stmt->execute();
-    $produto_id = $stmt->insert_id;
-    $stmt->close();
 }
 
 // Função para editar produtos
@@ -62,6 +62,12 @@ if (isset($_POST['edit'])) {
     $descricao = $_POST['descricao'];
     $preco = $_POST['preco'];
 
+    // Atualiza o produto
+    $stmt = $conn->prepare("UPDATE produtos SET nome = ?, descricao = ?, preco = ? WHERE id = ?");
+    $stmt->bind_param("ssii", $nome, $descricao, $preco, $id);
+    $stmt->execute();
+    $stmt->close();
+
     // Manipula o upload de imagens
     if (isset($_FILES['imagens']) && $_FILES['imagens']['error'][0] == UPLOAD_ERR_OK) {
         $target_dir = "images/";
@@ -69,26 +75,21 @@ if (isset($_POST['edit'])) {
             $target_file = $target_dir . basename($name);
             $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
             $check = getimagesize($_FILES["imagens"]["tmp_name"][$key]);
-            
-            // Verifica se o arquivo é uma imagem
+
             if ($check !== false) {
                 if (move_uploaded_file($_FILES["imagens"]["tmp_name"][$key], $target_file)) {
                     $stmt = $conn->prepare("INSERT INTO imagens (produto_id, imagem) VALUES (?, ?)");
                     $stmt->bind_param("is", $id, $name);
                     $stmt->execute();
+                    $stmt->close();
                 } else {
-                    echo "Desculpe, ocorreu um erro ao fazer upload da imagem.";
+                    echo "Erro ao fazer upload da imagem.";
                 }
             } else {
                 echo "O arquivo não é uma imagem.";
             }
         }
     }
-
-    $stmt = $conn->prepare("UPDATE produtos SET nome = ?, descricao = ?, preco = ? WHERE id = ?");
-    $stmt->bind_param("ssii", $nome, $descricao, $preco, $id);
-    $stmt->execute();
-    $stmt->close();
 }
 
 // Função para procurar produtos
@@ -291,7 +292,7 @@ function get_imagens($produto_id) {
                             <button type="submit" name="delete" class="delete-button">Deletar</button>
                         </form>
                         <!-- Botão de edição -->
-                        <form method="post" action="admin.php" style="display:inline;">
+                        <form method="post" action="" style="display:inline;">
                             <input type="hidden" name="id" value="<?php echo htmlspecialchars($row['id']); ?>">
                             <button type="submit" name="edit" class="edit-button">Editar</button>
                         </form>
