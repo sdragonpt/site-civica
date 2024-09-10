@@ -139,7 +139,7 @@ function get_imagens($produto_id) {
         }
         .form-group input, .form-group textarea {
             width: 100%;
-            margin-right: 30%;
+            max-width: 300px;
             padding: 8px;
             margin: 5px 0;
             border: 1px solid #ddd;
