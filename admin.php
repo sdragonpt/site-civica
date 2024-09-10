@@ -262,7 +262,10 @@ if (isset($_GET['logout'])) {
                 <div><input type="file" name="imagens[]" multiple></div>
                 
                 <!-- Seção de seleção de categorias -->
-                <h3>Selecionar Categorias</h3>
+                <h3>
+                    Selecionar Categorias
+                    <a href="gerenciar_categorias.php" style="margin-left: 10px; text-decoration: none; color: #007bff; font-size: 14px;">Gerenciar Categorias</a>
+                </h3>
                 <div class="category-list">
                     <?php while ($categoria = $categorias_result->fetch_assoc()): ?>
                         <label style="border: 1px solid; border-radius: 3px; padding: 4px; font-size: 14px;">
@@ -313,7 +316,7 @@ if (isset($_GET['logout'])) {
                             <?php endwhile; ?>
                         </td>
                         <td>
-                            <a href="editar_produto.php?id=<?php echo htmlspecialchars($produto['id']); ?>" class="edit-button">Editar</a>
+                            <a style="text-decoration: none;" href="editar_produto.php?id=<?php echo htmlspecialchars($produto['id']); ?>" class="edit-button">Editar</a>
                             <form method="post" action="" style="display: inline;">
                                 <input type="hidden" name="id" value="<?php echo htmlspecialchars($produto['id']); ?>">
                                 <button type="submit" name="delete" class="delete-button">Excluir</button>

@@ -187,9 +187,9 @@ if ($id_categoria > 0) {
                     <td><?php echo htmlspecialchars($row['nome']); ?></td>
                     <td>
                         <!-- Link para editar categoria -->
-                        <a href="gerenciar_categorias.php?edit_category=<?php echo htmlspecialchars($row['id']); ?>" class="edit-button">Editar</a>
+                        <a style="text-decoration: none;" href="gerenciar_categorias.php?edit_category=<?php echo htmlspecialchars($row['id']); ?>" class="edit-button">Editar</a>
                         <!-- Link para deletar categoria -->
-                        <a href="gerenciar_categorias.php?delete_category=<?php echo htmlspecialchars($row['id']); ?>" class="delete-button" onclick="return confirm('Tem certeza de que deseja excluir esta categoria?');">Deletar</a>
+                        <a style="text-decoration: none;" href="gerenciar_categorias.php?delete_category=<?php echo htmlspecialchars($row['id']); ?>" class="delete-button" onclick="return confirm('Tem certeza de que deseja excluir esta categoria?');">Deletar</a>
                     </td>
                 </tr>
                 <?php endwhile; ?>
