@@ -58,7 +58,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
         .login-container h2 {
             margin-bottom: 20px;
-            color: #004080;
+            color: #ffcc00;
         }
         .login-container input {
             width: 93%;
@@ -70,7 +70,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         .login-container button {
             width: 100%;
             padding: 10px;
-            background-color: #ff6600;
+            background-color: #333;
             border: none;
             border-radius: 4px;
             color: #fff;

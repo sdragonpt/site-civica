@@ -121,7 +121,7 @@ $imagens = get_imagens($id);
             position: absolute;
             top: 20px;
             padding: 10px 20px;
-            background-color: #ff6600;
+            background-color: #333;
             border: none;
             border-radius: 4px;
             color: #fff;
@@ -134,7 +134,7 @@ $imagens = get_imagens($id);
             right: 20px;
         }
         .back-button:hover, .logout-button:hover {
-            background-color: #cc5200;
+            background-color: #333;
         }
         .form-group {
             margin-bottom: 15px;
@@ -155,7 +155,7 @@ $imagens = get_imagens($id);
             cursor: pointer;
         }
         .form-group button:hover {
-            background-color: #cc5200;
+            background-color: #333;
         }
         .image-container {
             position: relative;
@@ -213,7 +213,7 @@ $imagens = get_imagens($id);
     <div class="admin-container">
         <button class="back-button" onclick="window.location.href='admin.php'">Voltar</button>
         <button class="logout-button" onclick="window.location.href='admin.php?logout=true'">Logout</button>
-        <h1>Editar Produto</h1>
+        <h1 style="color: #ffcc00">Editar Produto</h1>
 
         <!-- Formulário para editar produto -->
         <form method="post" action="" enctype="multipart/form-data">
