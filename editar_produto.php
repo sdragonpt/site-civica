@@ -9,13 +9,38 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 
 include 'config.php'; // Inclui a configuração de conexão com o banco de dados
 
-// Carregar imagens associadas ao produto
+// Função para carregar as imagens associadas ao produto
 function get_imagens($produto_id) {
     global $conn;
     $stmt = $conn->prepare("SELECT * FROM imagens WHERE produto_id = ?");
     $stmt->bind_param("i", $produto_id);
     $stmt->execute();
     return $stmt->get_result();
+}
+
+// Função para remover uma imagem
+if (isset($_GET['remove_image'])) {
+    $imagem_id = $_GET['remove_image'];
+    $stmt = $conn->prepare("SELECT imagem FROM imagens WHERE id = ?");
+    $stmt->bind_param("i", $imagem_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $imagem = $result->fetch_assoc()['imagem'];
+    $stmt->close();
+
+    // Remove o arquivo da pasta de imagens
+    if (file_exists("images/$imagem")) {
+        unlink("images/$imagem");
+    }
+
+    // Remove a entrada do banco de dados
+    $stmt = $conn->prepare("DELETE FROM imagens WHERE id = ?");
+    $stmt->bind_param("i", $imagem_id);
+    $stmt->execute();
+    $stmt->close();
+
+    header("Location: editar_produto.php?id=" . $_GET['produto_id']);
+    exit();
 }
 
 // Função para editar produtos
@@ -25,6 +50,7 @@ if (isset($_POST['edit'])) {
     $descricao = $_POST['descricao'];
     $preco = $_POST['preco'];
 
+    // Atualiza as informações do produto
     $stmt = $conn->prepare("UPDATE produtos SET nome = ?, descricao = ?, preco = ? WHERE id = ?");
     $stmt->bind_param("ssii", $nome, $descricao, $preco, $id);
     $stmt->execute();
@@ -37,7 +63,7 @@ if (isset($_POST['edit'])) {
             $target_file = $target_dir . basename($name);
             $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
             $check = getimagesize($_FILES["imagens"]["tmp_name"][$key]);
-
+            
             // Verifica se o arquivo é uma imagem
             if ($check !== false) {
                 if (move_uploaded_file($_FILES["imagens"]["tmp_name"][$key], $target_file)) {
@@ -54,40 +80,16 @@ if (isset($_POST['edit'])) {
     }
 }
 
-// Função para procurar produtos
-$search = '';
-if (isset($_POST['search'])) {
-    $search = $_POST['search'];
-    $stmt = $conn->prepare("SELECT * FROM produtos WHERE nome LIKE ?");
-    $stmt->bind_param("s", $search);
-    $search = "%$search%";
-} else {
-    $stmt = $conn->prepare("SELECT * FROM produtos");
-}
-
-// Executa a consulta
+// Obtém o ID do produto para editar
+$id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+$stmt = $conn->prepare("SELECT * FROM produtos WHERE id = ?");
+$stmt->bind_param("i", $id);
 $stmt->execute();
-$produtos = $stmt->get_result();
+$produto = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
-// Logout
-if (isset($_GET['logout'])) {
-    session_unset();
-    session_destroy();
-    header("Location: login.php");
-    exit();
-}
-
-// Mostrar o produto para edição
-$product_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
-$product = null;
-if ($product_id > 0) {
-    $stmt = $conn->prepare("SELECT * FROM produtos WHERE id = ?");
-    $stmt->bind_param("i", $product_id);
-    $stmt->execute();
-    $product = $stmt->get_result()->fetch_assoc();
-    $stmt->close();
-}
+// Obtém as imagens do produto
+$imagens = get_imagens($id);
 ?>
 
 <!DOCTYPE html>
@@ -95,7 +97,7 @@ if ($product_id > 0) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Editar Produto</title>
+    <title>Editar Produto - Civica</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -110,10 +112,9 @@ if ($product_id > 0) {
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             position: relative;
         }
-        .logout-button {
+        .logout-button, .back-button {
             position: absolute;
             top: 20px;
-            right: 20px;
             padding: 10px 20px;
             background-color: #ff6600;
             border: none;
@@ -121,7 +122,13 @@ if ($product_id > 0) {
             color: #fff;
             cursor: pointer;
         }
-        .logout-button:hover {
+        .back-button {
+            right: 120px;
+        }
+        .logout-button {
+            right: 20px;
+        }
+        .back-button:hover, .logout-button:hover {
             background-color: #cc5200;
         }
         .form-group {
@@ -146,88 +153,73 @@ if ($product_id > 0) {
             background-color: #cc5200;
         }
         .image-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
+            position: relative;
+            display: inline-block;
+            margin-right: 10px;
+            margin-bottom: 10px;
         }
         .image-container img {
             width: 100px;
             height: 100px;
             object-fit: cover;
-            border-radius: 4px;
-            position: relative;
         }
-        .image-container .remove-button {
+        .remove-button {
             position: absolute;
             top: 0;
             right: 0;
-            background: rgba(255, 0, 0, 0.5);
+            background-color: #ff0000;
             color: #fff;
             border: none;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            padding: 5px;
+            border-radius: 0 0 0 5px;
             cursor: pointer;
         }
-        .add-image-container {
-            display: flex;
-            align-items: center;
-            margin-top: 10px;
+        .remove-button:hover {
+            background-color: #cc0000;
         }
-        .add-image-container input {
-            margin-right: 10px;
+        .add-button {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 5px 10px;
+            background-color: #00cc00;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .add-button:hover {
+            background-color: #009900;
         }
     </style>
 </head>
 <body>
     <div class="admin-container">
+        <button class="back-button" onclick="window.location.href='admin.php'">Voltar</button>
         <button class="logout-button" onclick="window.location.href='admin.php?logout=true'">Logout</button>
         <h1>Editar Produto</h1>
 
-        <?php if ($product): ?>
+        <!-- Formulário para editar produto -->
         <form method="post" action="" enctype="multipart/form-data">
-            <input type="hidden" name="id" value="<?php echo htmlspecialchars($product['id']); ?>">
             <div class="form-group">
-                <input type="text" name="nome" value="<?php echo htmlspecialchars($product['nome']); ?>" placeholder="Nome" required>
-                <textarea name="descricao" placeholder="Descrição"><?php echo htmlspecialchars($product['descricao']); ?></textarea>
-                <input type="text" name="preco" value="<?php echo htmlspecialchars($product['preco']); ?>" placeholder="Preço" required>
-            </div>
-
-            <div class="form-group">
-                <label>Imagens Existentes:</label>
-                <div class="image-container">
-                    <?php
-                    $imagens = get_imagens($product['id']);
-                    while ($img = $imagens->fetch_assoc()) {
-                        echo '<div>';
-                        echo '<img src="images/' . htmlspecialchars($img['imagem']) . '" alt="' . htmlspecialchars($product['nome']) . '">';
-                        echo '<button class="remove-button" onclick="removeImage(' . htmlspecialchars($img['id']) . ')">X</button>';
-                        echo '</div>';
-                    }
-                    ?>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label>Adicionar Imagens:</label>
+                <input type="text" name="id" value="<?php echo htmlspecialchars($produto['id']); ?>" readonly>
+                <input type="text" name="nome" value="<?php echo htmlspecialchars($produto['nome']); ?>" placeholder="Nome">
+                <textarea name="descricao" placeholder="Descrição"><?php echo htmlspecialchars($produto['descricao']); ?></textarea>
+                <input type="text" name="preco" value="<?php echo htmlspecialchars($produto['preco']); ?>" placeholder="Preço">
                 <input type="file" name="imagens[]" multiple>
             </div>
             <button type="submit" name="edit">Salvar Alterações</button>
         </form>
-        <?php else: ?>
-        <p>Produto não encontrado.</p>
-        <?php endif; ?>
-    </div>
 
-    <script>
-        function removeImage(imageId) {
-            if (confirm("Tem certeza de que deseja excluir esta imagem?")) {
-                window.location.href = 'remove_image.php?id=' + imageId;
-            }
-        }
-    </script>
+        <!-- Exibe as imagens existentes com opção de remoção -->
+        <h2>Imagens Atuais</h2>
+        <div>
+            <?php while ($img = $imagens->fetch_assoc()): ?>
+                <div class="image-container">
+                    <img src="images/<?php echo htmlspecialchars($img['imagem']); ?>" alt="Imagem do produto">
+                    <a href="editar_produto.php?id=<?php echo htmlspecialchars($produto['id']); ?>&remove_image=<?php echo htmlspecialchars($img['id']); ?>" class="remove-button">X</a>
+                </div>
+            <?php endwhile; ?>
+        </div>
+    </div>
 </body>
 </html>
