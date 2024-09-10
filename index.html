@@ -74,7 +74,37 @@
             margin: 20px 0;
         }
 
-        /* Rodapé */
+        .product-list {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+        }
+
+        .product-item {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 10px;
+            width: 30%;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .product-item img {
+            width: 100%;
+            height: auto;
+            object-fit: cover;
+        }
+
+        .product-item h3 {
+            font-size: 18px;
+            margin: 10px 0;
+        }
+
+        .product-item p {
+            font-size: 16px;
+        }
+
         footer {
             margin-top: 20px;
             background-color: #333;
@@ -163,6 +193,31 @@
         <?php
         include('config.php'); // Inclua o arquivo de configuração do banco de dados
 
+        // Obter os 6 produtos mais recentes
+        $stmt = $conn->prepare("
+            SELECT * FROM produtos 
+            ORDER BY data_adicionado DESC 
+            LIMIT 6
+        ");
+        $stmt->execute();
+        $produtos_recentes = $stmt->get_result();
+        ?>
+
+        <div class="content">
+            <h2>Últimos Produtos</h2>
+            <div class="product-list">
+                <?php while ($produto = $produtos_recentes->fetch_assoc()): ?>
+                    <div class="product-item">
+                        <img src="images/<?php echo htmlspecialchars($produto['imagem']); ?>" alt="<?php echo htmlspecialchars($produto['nome']); ?>">
+                        <h3><?php echo htmlspecialchars($produto['nome']); ?></h3>
+                        <p><?php echo htmlspecialchars($produto['descricao']); ?></p>
+                        <p>Preço: €<?php echo htmlspecialchars($produto['preco']); ?></p>
+                    </div>
+                <?php endwhile; ?>
+            </div>
+        </div>
+
+        <?php
         // Obter todas as categorias
         $categorias_result = $conn->query("SELECT * FROM categorias");
 
@@ -217,18 +272,14 @@
 
                 <div class="about">
                     <h3>Sobre Nós</h3>
-                    <p>Cívica - Construções, Engenharia e Equipamentos, Lda</p>
-                    <p>Sociedade por Quotas</p>
-                    <p>Capital Social 100.000,00€</p>
-                    <p>NIF/EORI: PT 504 117 246</p>
-                    <p>Alvará: nº 43194</p>
+                    <p>Especializados na importação, exportação e comercialização de maquinaria e equipamentos.</p>
                 </div>
             </div>
 
             <div class="social">
-                <a href="#"><i class="fa-brands fa-facebook" style="margin-right: 6px;"></i>Facebook</a>
-                <a href="#"><i class="fa-brands fa-instagram" style="margin-right: 6px;"></i>Instagram</a>
-                <p>&copy; 2024 Civica - Todos os direitos reservados</p>
+                <a href="https://www.facebook.com/Civica.Equipamentos" target="_blank" title="Facebook"><i class="fa-brands fa-facebook"></i></a>
+                <a href="https://www.instagram.com/civicaequipamentos/" target="_blank" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                <a href="https://www.linkedin.com/company/civica/" target="_blank" title="LinkedIn"><i class="fa-brands fa-linkedin"></i></a>
             </div>
         </footer>
     </div>
