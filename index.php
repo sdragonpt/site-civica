@@ -87,9 +87,8 @@
             border-radius: 5px;
             padding: 10px;
             margin: 10px;
-            width: 22%; /* Ajuste para caber 4 cards por linha */
+            width: 30%;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            position: relative; /* Para posicionar o botão */
         }
 
         .product-item img {
@@ -105,22 +104,6 @@
 
         .product-item p {
             font-size: 16px;
-        }
-
-        .product-item button {
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            background-color: #ff6600;
-            color: #fff;
-            border: none;
-            border-radius: 5px;
-            padding: 10px;
-            cursor: pointer;
-        }
-
-        .product-item button:hover {
-            background-color: #cc5200;
         }
 
         footer {
@@ -193,7 +176,6 @@
         /* Estilo para botões de categorias */
         .category-buttons {
             margin-top: 20px;
-            text-align: center; /* Centraliza os botões */
         }
 
         .category-buttons a {
@@ -204,7 +186,6 @@
             color: #fff;
             text-decoration: none;
             border-radius: 4px;
-            transition: background-color 0.3s; /* Efeito de transição suave */
         }
 
         .category-buttons a:hover {
@@ -256,46 +237,89 @@
                         <img src="images/<?php echo htmlspecialchars($produto['imagem']); ?>" alt="<?php echo htmlspecialchars($produto['nome']); ?>">
                         <h3><?php echo htmlspecialchars($produto['nome']); ?></h3>
                         <p><?php echo htmlspecialchars($produto['descricao']); ?></p>
-                        <p><strong><?php echo htmlspecialchars($produto['preco']); ?>€</strong></p>
-                        <button>Ver Mais</button> <!-- Botão para ações futuras -->
+                        <p>Preço: €<?php echo htmlspecialchars($produto['preco']); ?></p>
                     </div>
-                <?php endwhile; ?>
-            </div>
-
-            <!-- Botões de categorias -->
-            <div class="category-buttons">
-                <?php
-                // Obter todas as categorias
-                $categorias_result = $conn->query("SELECT * FROM categorias");
-                while ($categoria = $categorias_result->fetch_assoc()): 
-                    $categoria_nome = htmlspecialchars($categoria['nome']);
-                    $categoria_id = htmlspecialchars($categoria['id']);
-                ?>
-                    <a href="#<?php echo $categoria_nome; ?>"><?php echo $categoria_nome; ?></a>
                 <?php endwhile; ?>
             </div>
         </div>
 
-        <!-- Rodapé -->
-        <footer>
-            <div class="footer-section">
-                <div>
-                    <h3>Sobre Nós</h3>
-                    <p>Na Civica Equipamentos, oferecemos uma vasta gama de equipamentos e máquinas para construção civil e obras públicas. A nossa missão é fornecer produtos de qualidade com o melhor atendimento.</p>
-                </div>
-                <div>
-                    <h3>Endereço</h3>
-                    <p>Rua de Exemplo, 123<br>Lisboa, Portugal</p>
-                </div>
-                <div>
-                    <h3>Contate-Nos</h3>
-                    <p>Email: contato@civica.pt<br>Telefone: +351 123 456 789</p>
+        <!-- Botões de categorias -->
+        <div class="category-buttons" id="categorias">
+            <?php
+            // Obter todas as categorias
+            $categorias_result = $conn->query("SELECT * FROM categorias");
+            while ($categoria = $categorias_result->fetch_assoc()): 
+                $categoria_nome = htmlspecialchars($categoria['nome']);
+                $categoria_id = htmlspecialchars($categoria['id']);
+            ?>
+                <a href="#<?php echo $categoria_nome; ?>"><?php echo $categoria_nome; ?></a>
+            <?php endwhile; ?>
+        </div>
+
+        <!-- Exibir produtos por categorias -->
+        <?php
+        $categorias_result->data_seek(0); // Resetar o ponteiro do resultado para reusar a variável
+
+        while ($categoria = $categorias_result->fetch_assoc()): 
+            $categoria_id = $categoria['id'];
+            $categoria_nome = htmlspecialchars($categoria['nome']);
+
+            // Obter produtos para a categoria atual
+            $stmt = $conn->prepare("
+                SELECT p.*, i.imagem 
+                FROM produtos p
+                INNER JOIN produto_categoria pc ON p.id = pc.produto_id
+                LEFT JOIN imagens i ON p.id = i.produto_id
+                WHERE pc.categoria_id = ?
+                AND i.imagem IS NOT NULL
+            ");
+            $stmt->bind_param("i", $categoria_id);
+            $stmt->execute();
+            $produtos_result = $stmt->get_result();
+        ?>
+            <div class="content" id="<?php echo $categoria_nome; ?>">
+                <h2><?php echo $categoria_nome; ?></h2>
+                <div class="product-list">
+                    <?php while ($produto = $produtos_result->fetch_assoc()): ?>
+                        <div class="product-item">
+                            <img src="images/<?php echo htmlspecialchars($produto['imagem']); ?>" alt="<?php echo htmlspecialchars($produto['nome']); ?>">
+                            <h3><?php echo htmlspecialchars($produto['nome']); ?></h3>
+                            <p><?php echo htmlspecialchars($produto['descricao']); ?></p>
+                            <p>Preço: €<?php echo htmlspecialchars($produto['preco']); ?></p>
+                        </div>
+                    <?php endwhile; ?>
                 </div>
             </div>
+        <?php endwhile; ?>
+
+        <!-- Rodapé -->
+        <footer id="contacto">
+            <div class="footer-section">
+                <div class="contact-info" style="margin-right: -5em;">
+                    <h3>Contacto</h3>
+                    <p>Tel/Fax: +351 259 351 024</p>
+                    <p>Móvel: +351 967 571 033</p>
+                    <p>WhatsApp: +351 967 571 033</p>
+                    <p>Email: <a href="mailto:civica@civica.pt" style="color: #ffcc00;">civica@civica.pt</a></p>
+                </div>
+
+                <div class="location">
+                    <h3>Localização</h3>
+                    <p>Zona Industrial de Constantim, Lote 143 e 144</p>
+                    <p>5000-082 Vila Real, Portugal</p>
+                    <p>GPS: Lat. 41°16'43'' N - Long. 7°42'22'' W</p>
+                </div>
+
+                <div class="about">
+                    <h3>Sobre Nós</h3>
+                    <p>Especializados na importação, exportação e comercialização de maquinaria e equipamentos.</p>
+                </div>
+            </div>
+
             <div class="social">
-                <a href="#"><i class="fab fa-facebook-f"></i></a>
-                <a href="#"><i class="fab fa-twitter"></i></a>
-                <a href="#"><i class="fab fa-instagram"></i></a>
+                <a href="#"><i class="fa-brands fa-facebook" style="margin-right: 6px;"></i>Facebook</a>
+                <a href="#"><i class="fa-brands fa-instagram" style="margin-right: 6px;"></i>Instagram</a>
+                <p>&copy; 2024 Civica - Todos os direitos reservados</p>
             </div>
         </footer>
     </div>
