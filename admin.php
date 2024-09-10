@@ -1,33 +1,31 @@
 <?php
-include 'config.php';
-session_start();
+session_start(); // Inicia a sessão
 
+// Verificar se o usuário está logado
 if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
-    header("Location: login.php");
-    exit;
+    header("Location: login.php"); // Redireciona para a página de login
+    exit();
 }
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $nome = $_POST['nome'];
-    $descricao = $_POST['descricao'];
-    $preco = $_POST['preco'];
-    $imagem = $_POST['imagem'];
+// Conectar ao banco de dados
+include 'config.php';
 
-    $sql = "INSERT INTO produtos (nome, descricao, preco, imagem) VALUES ('$nome', '$descricao', '$preco', '$imagem')";
-
-    if ($conn->query($sql) === TRUE) {
-        echo "Novo produto adicionado com sucesso!";
-    } else {
-        echo "Erro: " . $sql . "<br>" . $conn->error;
-    }
-}
+// Aqui vai o seu código para exibir a página admin
 ?>
 
-<h1>Adicionar Produto</h1>
-<form method="post" action="">
-    Nome: <input type="text" name="nome" required><br>
-    Descrição: <textarea name="descricao"></textarea><br>
-    Preço: <input type="text" name="preco" required><br>
-    Imagem: <input type="text" name="imagem"><br>
-    <input type="submit" value="Adicionar Produto">
-</form>
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Civica</title>
+    <style>
+        /* Adicione seu estilo para a página admin aqui */
+    </style>
+</head>
+<body>
+    <h1>Painel Administrativo</h1>
+    <p>Bem-vindo ao painel administrativo, <?php echo htmlspecialchars($_SESSION['username']); ?>!</p>
+    <!-- Adicione o conteúdo da sua página admin aqui -->
+</body>
+</html>
