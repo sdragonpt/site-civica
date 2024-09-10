@@ -63,7 +63,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         .login-container input {
             width: 100%;
             padding: 10px;
-            margin-top: 10px;
+            margin: 10px 0;
+            margin-right: 10px;
             border: 1px solid #ddd;
             border-radius: 4px;
         }
