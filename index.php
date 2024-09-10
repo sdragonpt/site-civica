@@ -92,9 +92,9 @@
         }
 
         .product-item img {
-            width: 100%;
-            height: auto;
-            object-fit: cover;
+            max-width: 200px;
+            height: auto; /* Mantém a proporção da imagem */
+            object-fit: cover; /* Ajusta a imagem ao tamanho do contêiner */
         }
 
         .product-item h3 {
