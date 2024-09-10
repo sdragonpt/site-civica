@@ -107,7 +107,8 @@ $imagens = get_imagens($id);
             background-color: #f4f4f4;
             margin: 0;
             padding: 20px;
-            width: 70%;
+            margin-left: 20%;
+            margin-right: 20%;
         }
         .admin-container {
             background-color: #fff;
