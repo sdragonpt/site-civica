@@ -1,6 +1,6 @@
 <?php
 $servername = "localhost"; // Como indicado no phpMyAdmin
-$username = "admin"; // Substitua pelo nome de usuário correto
+$username = "civica2018_admin"; // Substitua pelo nome de usuário correto
 $password = "3(dy09qCno-3"; // Substitua pela senha correta
 $dbname = "civica2018_backoffice-db"; // Nome do banco de dados fornecido
 
