@@ -25,7 +25,6 @@ if (isset($_POST['add'])) {
     $preco = $_POST['preco'];
 
     // Manipula o upload de imagens
-    $imagem = '';
     if (isset($_FILES['imagens']) && $_FILES['imagens']['error'][0] == UPLOAD_ERR_OK) {
         $target_dir = "images/";
         foreach ($_FILES['imagens']['name'] as $key => $name) {
@@ -98,6 +97,25 @@ if (isset($_POST['add_category'])) {
 
 // Obter categorias existentes
 $categorias_result = $conn->query("SELECT * FROM categorias");
+
+// Obter categorias associadas a cada produto
+function get_categorias_produto($produto_id) {
+    global $conn;
+    $stmt = $conn->prepare("
+        SELECT c.nome 
+        FROM categorias c 
+        JOIN produto_categoria pc ON c.id = pc.categoria_id 
+        WHERE pc.produto_id = ?");
+    $stmt->bind_param("i", $produto_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $categorias = [];
+    while ($row = $result->fetch_assoc()) {
+        $categorias[] = $row['nome'];
+    }
+    return implode(', ', $categorias);
+}
 
 ?>
 
@@ -195,6 +213,17 @@ $categorias_result = $conn->query("SELECT * FROM categorias");
         .edit-button:hover {
             background-color: #cca700;
         }
+        .manage-category-button {
+            background-color: #004080;
+            color: #fff;
+            text-decoration: none;
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .manage-category-button:hover {
+            background-color: #003366;
+        }
     </style>
 </head>
 <body>
@@ -221,6 +250,20 @@ $categorias_result = $conn->query("SELECT * FROM categorias");
             <button type="submit" name="add">Adicionar Produto</button>
         </form>
 
+        <!-- Formulário para adicionar categorias -->
+        <h2>Adicionar Categoria</h2>
+        <form method="post" action="">
+            <div class="form-group">
+                <div><input type="text" name="nome_categoria" placeholder="Nome da Categoria" required></div>
+            </div>
+            <button type="submit" name="add_category">Adicionar Categoria</button>
+        </form>
+
+        <!-- Botão para gerenciar categorias -->
+        <h2>
+            Categorias
+            <a href="gerenciar_categorias.php" class="manage-category-button">Gerir</a>
+        </h2>
 
         <!-- Tabela de produtos -->
         <h2>Produtos</h2>
@@ -232,6 +275,7 @@ $categorias_result = $conn->query("SELECT * FROM categorias");
                     <th>Descrição</th>
                     <th>Preço</th>
                     <th>Imagens</th>
+                    <th>Categorias</th>
                     <th>Ações</th>
                 </tr>
             </thead>
@@ -250,6 +294,7 @@ $categorias_result = $conn->query("SELECT * FROM categorias");
                         }
                         ?>
                     </td>
+                    <td><?php echo get_categorias_produto($row['id']); ?></td>
                     <td>
                         <!-- Formulário para deletar produto -->
                         <form method="post" action="" style="display:inline;">
