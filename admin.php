@@ -147,7 +147,6 @@ $categorias_result = $conn->query("SELECT * FROM categorias");
             margin: 5px 0;
             border: 1px solid #ddd;
             border-radius: 4px;
-            float: left;
         }
         .form-group button {
             padding: 10px 20px;
@@ -207,15 +206,17 @@ $categorias_result = $conn->query("SELECT * FROM categorias");
         <h2>Adicionar Produto</h2>
         <form method="post" action="" enctype="multipart/form-data">
             <div class="form-group">
-                <input type="text" name="nome" placeholder="Nome" required>
-                <textarea name="descricao" placeholder="Descrição"></textarea>
-                <input type="text" name="preco" placeholder="Preço" required>
-                <input type="file" name="imagens[]" multiple>
-                <select name="categorias[]" multiple>
-                    <?php while ($categoria = $categorias_result->fetch_assoc()): ?>
-                        <option value="<?php echo $categoria['id']; ?>"><?php echo htmlspecialchars($categoria['nome']); ?></option>
-                    <?php endwhile; ?>
-                </select>
+                <div><input type="text" name="nome" placeholder="Nome" required></div>
+                <div><textarea name="descricao" placeholder="Descrição"></textarea></div>
+                <div><input type="text" name="preco" placeholder="Preço" required></div>
+                <div><input type="file" name="imagens[]" multiple></div>
+                <div>
+                    <select name="categorias[]" multiple>
+                        <?php while ($categoria = $categorias_result->fetch_assoc()): ?>
+                            <option value="<?php echo $categoria['id']; ?>"><?php echo htmlspecialchars($categoria['nome']); ?></option>
+                        <?php endwhile; ?>
+                    </select>
+                </div>
             </div>
             <button type="submit" name="add">Adicionar Produto</button>
         </form>
