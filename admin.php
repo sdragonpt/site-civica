@@ -77,6 +77,39 @@ if (isset($_POST['add'])) {
     }
 }
 
+// Função para excluir produtos
+if (isset($_POST['delete'])) {
+    $produto_id = $_POST['id'];
+
+    // Remove imagens associadas
+    $stmt = $conn->prepare("SELECT imagem FROM imagens WHERE produto_id = ?");
+    $stmt->bind_param("i", $produto_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    while ($img = $result->fetch_assoc()) {
+        $imagem = $img['imagem'];
+        if (file_exists("images/$imagem")) {
+            unlink("images/$imagem");
+        }
+    }
+    $stmt->close();
+
+    // Remove categorias associadas
+    $stmt = $conn->prepare("DELETE FROM produto_categoria WHERE produto_id = ?");
+    $stmt->bind_param("i", $produto_id);
+    $stmt->execute();
+    $stmt->close();
+
+    // Remove o produto
+    $stmt = $conn->prepare("DELETE FROM produtos WHERE id = ?");
+    $stmt->bind_param("i", $produto_id);
+    $stmt->execute();
+    $stmt->close();
+
+    header("Location: admin.php"); // Redireciona de volta para admin.php
+    exit();
+}
+
 // Função para procurar produtos
 $stmt = $conn->prepare("SELECT * FROM produtos");
 $stmt->execute();
@@ -233,8 +266,8 @@ if (isset($_GET['logout'])) {
                 if (index === -1) {
                     const option = document.createElement('option');
                     option.value = categoryId;
-                    option.text = categoryBox.textContent;
-                    selectedCategories.add(option);
+                    option.textContent = categoryBox.textContent;
+                    selectedCategories.appendChild(option);
                 }
             } else {
                 if (index !== -1) {
@@ -247,27 +280,27 @@ if (isset($_GET['logout'])) {
 <body>
     <div class="admin-container">
         <button class="logout-button" onclick="window.location.href='admin.php?logout=true'">Logout</button>
-        <h1 style="color: #ffcc00">Gerenciar Produtos</h1>
+        <h1>Admin - Civica</h1>
 
-        <!-- Formulário para adicionar produtos -->
+        <!-- Formulário para adicionar produto -->
         <h2>Adicionar Produto</h2>
         <form method="post" action="" enctype="multipart/form-data">
             <div class="form-group">
-                <input type="text" name="nome" placeholder="Nome" required>
+                <input type="text" name="nome" placeholder="Nome do Produto" required>
                 <textarea name="descricao" placeholder="Descrição" required></textarea>
                 <input type="text" name="preco" placeholder="Preço" required>
                 <input type="file" name="imagens[]" multiple>
-            </div>
-            <div class="form-group">
-                <label for="categorias">Categorias:</label>
-                <div class="category-selector">
-                    <?php while ($categoria = $categorias_result->fetch_assoc()): ?>
-                        <div class="category-box" onclick="toggleCategory(this, <?php echo $categoria['id']; ?>)">
-                            <?php echo htmlspecialchars($categoria['nome']); ?>
-                        </div>
-                    <?php endwhile; ?>
+                <div class="form-group">
+                    <h3>Selecionar Categorias</h3>
+                    <div class="category-selector">
+                        <?php while ($categoria = $categorias_result->fetch_assoc()): ?>
+                            <div class="category-box" onclick="toggleCategory(this, <?php echo $categoria['id']; ?>)">
+                                <?php echo htmlspecialchars($categoria['nome']); ?>
+                            </div>
+                        <?php endwhile; ?>
+                    </div>
+                    <select id="selected_categories" name="categorias[]" multiple style="display: none;"></select>
                 </div>
-                <select id="selected_categories" name="categorias[]" multiple style="display: none;"></select>
             </div>
             <button type="submit" name="add">Adicionar Produto</button>
         </form>
