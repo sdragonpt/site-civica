@@ -1,16 +1,16 @@
 <?php
-$servername = "localhost";
-$username = "admin";
-$password = "3(dy09qCno-3";
-$dbname = "civica2018_backoffice-db";
+$servername = "localhost"; // Como indicado no phpMyAdmin
+$username = "admin"; // Substitua pelo nome de usuário correto
+$password = "3(dy09qCno-3"; // Substitua pela senha correta
+$dbname = "civica2018_backoffice-db"; // Nome do banco de dados fornecido
 
-// Criar a conexão
-$conn = new mysqli($servername, $username, $password, $dbname);
+// Criar conexão
+$conn = new mysqli($servername, $username, $password, $dbname, 3306);
 
-// Verificar a conexão
+// Verificar conexão
 if ($conn->connect_error) {
     die("Falha na conexão: " . $conn->connect_error);
+} else {
+    echo "Conexão bem-sucedida!";
 }
-
-echo "Conexão bem-sucedida!";
 ?>
