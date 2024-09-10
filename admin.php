@@ -145,6 +145,10 @@ if (isset($_GET['logout'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Civica</title>
     <style>
+        h1{
+            color: #ffcc00;
+        }
+
         body {
             font-family: Arial, sans-serif;
             background-color: #f4f4f4;
@@ -252,11 +256,11 @@ if (isset($_GET['logout'])) {
         <h2>Adicionar Produto</h2>
         <form method="post" action="" enctype="multipart/form-data">
             <div class="form-group">
-                <input type="text" name="nome" placeholder="Nome do Produto" required>
-                <textarea name="descricao" placeholder="Descrição" required></textarea>
-                <input type="text" name="preco" placeholder="Preço" required>
-                <input type="file" name="imagens[]" multiple>
-
+                <div><input type="text" name="nome" placeholder="Nome do Produto" required></div>
+                <div><textarea name="descricao" placeholder="Descrição" required></textarea></div>
+                <div><input type="text" name="preco" placeholder="Preço" required></div>
+                <div><input type="file" name="imagens[]" multiple></div>
+                
                 <!-- Seção de seleção de categorias -->
                 <h3>Selecionar Categorias</h3>
                 <div class="category-list">
