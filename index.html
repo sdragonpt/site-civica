@@ -155,44 +155,47 @@
 
         <!-- Navegação -->
         <nav>
-            <a href="#maquinas-usadas">Máquinas Usadas</a>
-            <a href="#acessorios">Acessórios</a>
-            <a href="#aluguer">Aluguer</a>
-            <a href="#pecas">Peças</a>
-            <a href="#assistencia">Assistência Técnica</a>
+            <a href="#categorias">Categorias</a>
             <a href="#contacto">Contacto</a>
         </nav>
 
         <!-- Conteúdo Principal -->
-        <div class="content" id="maquinas-usadas">
-            <h2>Máquinas Usadas</h2>
-            <img src="images/maquinas-usadas.jpg" alt="Máquinas Usadas">
-            <p>Confira nossa seleção de máquinas usadas em excelente estado e com preços competitivos.</p>
-        </div>
+        <?php
+        include('config.php'); // Inclua o arquivo de configuração do banco de dados
 
-        <div class="content" id="acessorios">
-            <h2>Acessórios</h2>
-            <img src="images/acessorios.jpg" alt="Acessórios para Máquinas">
-            <p>Dispomos de uma ampla variedade de acessórios para máquinas, como martelos hidráulicos, engates rápidos, e muito mais.</p>
-        </div>
+        // Obter todas as categorias
+        $categorias_result = $conn->query("SELECT * FROM categorias");
 
-        <div class="content" id="aluguer">
-            <h2>Aluguer</h2>
-            <img src="images/aluguer.jpg" alt="Aluguer de Máquinas">
-            <p>Alugue máquinas e equipamentos sem operador a preços competitivos. Consulte nossa disponibilidade!</p>
-        </div>
+        // Exibir produtos por categorias
+        while ($categoria = $categorias_result->fetch_assoc()): 
+            $categoria_id = $categoria['id'];
+            $categoria_nome = $categoria['nome'];
 
-        <div class="content" id="pecas">
-            <h2>Peças</h2>
-            <img src="images/pecas.jpg" alt="Peças para Máquinas">
-            <p>Peças novas e usadas para máquinas de construção, incluindo motores hidráulicos, cilindros e muito mais.</p>
-        </div>
-
-        <div class="content" id="assistencia">
-            <h2>Assistência Técnica</h2>
-            <img src="images/assistencia.jpg" alt="Assistência Técnica">
-            <p>Oferecemos serviços de assistência técnica pós-venda, incluindo reparação mecânica e pintura.</p>
-        </div>
+            // Obter produtos para a categoria atual
+            $stmt = $conn->prepare("
+                SELECT p.* 
+                FROM produtos p
+                INNER JOIN produto_categoria pc ON p.id = pc.produto_id
+                WHERE pc.categoria_id = ?
+            ");
+            $stmt->bind_param("i", $categoria_id);
+            $stmt->execute();
+            $produtos_result = $stmt->get_result();
+        ?>
+            <div class="content" id="<?php echo htmlspecialchars($categoria_nome); ?>">
+                <h2><?php echo htmlspecialchars($categoria_nome); ?></h2>
+                <div class="product-list">
+                    <?php while ($produto = $produtos_result->fetch_assoc()): ?>
+                        <div class="product-item">
+                            <img src="images/<?php echo htmlspecialchars($produto['imagem']); ?>" alt="<?php echo htmlspecialchars($produto['nome']); ?>">
+                            <h3><?php echo htmlspecialchars($produto['nome']); ?></h3>
+                            <p><?php echo htmlspecialchars($produto['descricao']); ?></p>
+                            <p>Preço: €<?php echo htmlspecialchars($produto['preco']); ?></p>
+                        </div>
+                    <?php endwhile; ?>
+                </div>
+            </div>
+        <?php endwhile; ?>
 
         <!-- Rodapé -->
         <footer id="contacto">
