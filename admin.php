@@ -260,8 +260,8 @@ if (isset($_GET['logout'])) {
                 <h3>Selecionar Categorias</h3>
                 <div class="category-list">
                     <?php while ($categoria = $categorias_result->fetch_assoc()): ?>
-                        <label style="border: 1px solid; border-radius: 3px; padding: 10px; font-size: 14px;">
-                            <input type="checkbox" name="categorias[]" value="<?php echo $categoria['id']; ?>">
+                        <label style="border: 1px solid; border-radius: 3px; padding: 4px; font-size: 14px;">
+                            <input style="width: 0 auto; margin-top: 2px" type="checkbox" name="categorias[]" value="<?php echo $categoria['id']; ?>">
                             <?php echo htmlspecialchars($categoria['nome']); ?>
                         </label>
                     <?php endwhile; ?>
