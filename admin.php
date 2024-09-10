@@ -45,7 +45,7 @@ if (isset($_POST['add'])) {
     $stmt->close();
 
     // Associa categorias ao produto
-    if (isset($_POST['categorias'])) {
+    if (isset($_POST['categorias']) && is_array($_POST['categorias'])) {
         foreach ($_POST['categorias'] as $categoria_id) {
             $stmt = $conn->prepare("INSERT INTO produto_categoria (produto_id, categoria_id) VALUES (?, ?)");
             $stmt->bind_param("ii", $produto_id, $categoria_id);
@@ -288,8 +288,10 @@ if (isset($_GET['logout'])) {
             </thead>
             <tbody>
                 <?php while ($produto = $produtos->fetch_assoc()): ?>
-                    <?php $categorias_produto = get_categorias($produto['id']); ?>
-                    <?php $imagens_produto = get_imagens($produto['id']); ?>
+                    <?php
+                    $categorias_produto = get_categorias($produto['id']);
+                    $imagens_produto = get_imagens($produto['id']);
+                    ?>
                     <tr>
                         <td><?php echo htmlspecialchars($produto['id']); ?></td>
                         <td><?php echo htmlspecialchars($produto['nome']); ?></td>
