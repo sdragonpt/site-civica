@@ -9,6 +9,15 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 
 include 'config.php'; // Inclui a configuração de conexão com o banco de dados
 
+// Função para carregar imagens associadas ao produto
+function get_imagens($produto_id) {
+    global $conn;
+    $stmt = $conn->prepare("SELECT * FROM imagens WHERE produto_id = ?");
+    $stmt->bind_param("i", $produto_id);
+    $stmt->execute();
+    return $stmt->get_result();
+}
+
 // Função para carregar categorias associadas ao produto
 function get_categorias($produto_id) {
     global $conn;
@@ -31,45 +40,48 @@ if (isset($_POST['add'])) {
     // Insere o produto
     $stmt = $conn->prepare("INSERT INTO produtos (nome, descricao, preco) VALUES (?, ?, ?)");
     $stmt->bind_param("ssi", $nome, $descricao, $preco);
-    $stmt->execute();
-    $produto_id = $stmt->insert_id; // Obtém o ID do produto inserido
-    $stmt->close();
+    if ($stmt->execute()) {
+        $produto_id = $stmt->insert_id; // Obtém o ID do produto inserido
+        $stmt->close();
 
-    // Associa categorias ao produto
-    if (isset($_POST['categorias'])) {
-        foreach ($_POST['categorias'] as $categoria_id) {
-            $stmt = $conn->prepare("INSERT INTO produto_categoria (produto_id, categoria_id) VALUES (?, ?)");
-            $stmt->bind_param("ii", $produto_id, $categoria_id);
-            $stmt->execute();
-            $stmt->close();
-        }
-    }
-
-    // Manipula o upload de imagens
-    if (isset($_FILES['imagens']) && $_FILES['imagens']['error'][0] == UPLOAD_ERR_OK) {
-        $target_dir = "images/";
-        foreach ($_FILES['imagens']['name'] as $key => $name) {
-            $target_file = $target_dir . basename($name);
-            $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
-            $check = getimagesize($_FILES["imagens"]["tmp_name"][$key]);
-            
-            // Verifica se o arquivo é uma imagem
-            if ($check !== false) {
-                if (move_uploaded_file($_FILES["imagens"]["tmp_name"][$key], $target_file)) {
-                    $stmt = $conn->prepare("INSERT INTO imagens (produto_id, imagem) VALUES (?, ?)");
-                    $stmt->bind_param("is", $produto_id, $name);
-                    $stmt->execute();
-                    $stmt->close();
-                } else {
-                    echo "Desculpe, ocorreu um erro ao fazer upload da imagem.";
-                }
-            } else {
-                echo "O arquivo não é uma imagem.";
+        // Associa categorias ao produto
+        if (isset($_POST['categorias']) && is_array($_POST['categorias'])) {
+            foreach ($_POST['categorias'] as $categoria_id) {
+                $stmt = $conn->prepare("INSERT INTO produto_categoria (produto_id, categoria_id) VALUES (?, ?)");
+                $stmt->bind_param("ii", $produto_id, $categoria_id);
+                $stmt->execute();
+                $stmt->close();
             }
         }
-    }
 
-    echo "Produto adicionado com sucesso!";
+        // Manipula o upload de imagens
+        if (isset($_FILES['imagens']) && $_FILES['imagens']['error'][0] == UPLOAD_ERR_OK) {
+            $target_dir = "images/";
+            foreach ($_FILES['imagens']['name'] as $key => $name) {
+                $target_file = $target_dir . basename($name);
+                $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
+                $check = getimagesize($_FILES["imagens"]["tmp_name"][$key]);
+                
+                // Verifica se o arquivo é uma imagem
+                if ($check !== false) {
+                    if (move_uploaded_file($_FILES["imagens"]["tmp_name"][$key], $target_file)) {
+                        $stmt = $conn->prepare("INSERT INTO imagens (produto_id, imagem) VALUES (?, ?)");
+                        $stmt->bind_param("is", $produto_id, $name);
+                        $stmt->execute();
+                        $stmt->close();
+                    } else {
+                        echo "Desculpe, ocorreu um erro ao fazer upload da imagem.";
+                    }
+                } else {
+                    echo "O arquivo não é uma imagem.";
+                }
+            }
+        }
+
+        echo "Produto adicionado com sucesso!";
+    } else {
+        echo "Erro ao adicionar o produto: " . $stmt->error;
+    }
 }
 
 // Função para buscar todos os produtos
@@ -78,8 +90,44 @@ $stmt->execute();
 $produtos = $stmt->get_result();
 $stmt->close();
 
+// Verifica se há produtos
+$tem_produtos = ($produtos->num_rows > 0);
+
 // Função para carregar categorias existentes
 $categorias_result = $conn->query("SELECT * FROM categorias");
+
+// Função para excluir produtos
+if (isset($_POST['delete'])) {
+    $produto_id = $_POST['id'];
+
+    // Remove o produto da tabela produto_categoria
+    $stmt = $conn->prepare("DELETE FROM produto_categoria WHERE produto_id = ?");
+    $stmt->bind_param("i", $produto_id);
+    $stmt->execute();
+    $stmt->close();
+
+    // Remove imagens associadas
+    $stmt = $conn->prepare("SELECT imagem FROM imagens WHERE produto_id = ?");
+    $stmt->bind_param("i", $produto_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    while ($img = $result->fetch_assoc()) {
+        $imagem = $img['imagem'];
+        if (file_exists("images/$imagem")) {
+            unlink("images/$imagem");
+        }
+    }
+    $stmt->close();
+
+    // Remove o produto
+    $stmt = $conn->prepare("DELETE FROM produtos WHERE id = ?");
+    $stmt->bind_param("i", $produto_id);
+    $stmt->execute();
+    $stmt->close();
+
+    header("Location: admin.php");
+    exit();
+}
 
 // Logout
 if (isset($_GET['logout'])) {
@@ -222,6 +270,8 @@ if (isset($_GET['logout'])) {
             <button type="submit" name="add">Adicionar Produto</button>
         </form>
 
+        <!-- Verifica se há produtos -->
+        <?php if ($tem_produtos): ?>
         <!-- Lista de produtos -->
         <h2>Produtos</h2>
         <table>
@@ -268,6 +318,9 @@ if (isset($_GET['logout'])) {
                 <?php endwhile; ?>
             </tbody>
         </table>
+        <?php else: ?>
+            <p>Nenhum produto foi encontrado.</p>
+        <?php endif; ?>
     </div>
 </body>
 </html>
