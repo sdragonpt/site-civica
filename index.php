@@ -7,6 +7,7 @@
     <meta name="keywords" content="maquinaria, equipamento, construção, exportação, importação, aluguel, máquinas, ferramentas, obras públicas">
     <meta name="author" content="Civica Engenharia">
     <script src="https://kit.fontawesome.com/753ec85429.js" crossorigin="anonymous"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <title>Civica Equipamentos - Oficial Webpage</title>
     
     <style>
@@ -17,8 +18,8 @@
 
         body {
             margin: 0;
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
+            font-family: 'Roboto', sans-serif;
+            background-color: #f5f5f5;
             color: #333;
             text-align: center;
         }
@@ -26,31 +27,46 @@
         #container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 20px 20px 0px 20px;
+            padding: 20px;
         }
 
         header {
-            background-color: #f4f4f4;
+            background-color: #004080;
             color: #fff;
-            padding-top: 10px;
+            padding: 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
         }
 
         header img {
-            max-width: 400px;
-            float: left;
+            max-width: 300px;
+            margin-bottom: 10px;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 2.5em;
+        }
+
+        header p {
+            margin: 0;
+            font-size: 1.2em;
         }
 
         nav {
-            margin: 30px 0;
+            margin: 20px 0;
         }
 
         nav a {
             color: #fff;
             text-decoration: none;
             margin: 0 15px;
-            padding: 10px;
+            padding: 10px 20px;
             background-color: #ff6600;
             border-radius: 4px;
+            transition: background-color 0.3s;
         }
 
         nav a:hover {
@@ -58,62 +74,65 @@
         }
 
         .content {
-            margin-top: 26px;
+            margin-top: 20px;
             background-color: #fff;
             padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
 
         .content h2 {
             color: #004080;
+            font-size: 2em;
+            margin-bottom: 20px;
         }
 
         .content img {
             max-width: 100%;
             height: auto;
+            border-radius: 8px;
             margin: 20px 0;
         }
 
         .product-list {
             display: flex;
             flex-wrap: wrap;
-            gap: 20px; /* Espaçamento entre os cards */
-            justify-content: space-between;
+            gap: 20px;
+            justify-content: center;
         }
 
         .product-item {
             background-color: #fff;
             border: 1px solid #ddd;
-            border-radius: 5px;
-            padding: 10px;
-            margin: 10px;
-            width: calc(25% - 20px); /* 4 cards por linha, com espaço entre eles */
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            width: calc(25% - 20px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: left;
         }
 
         .product-item img {
-            max-width: 200px;
-            height: auto; /* Mantém a proporção da imagem */
-            object-fit: cover; /* Ajusta a imagem ao tamanho do contêiner */
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
         }
 
         .product-item h3 {
-            font-size: 18px;
+            font-size: 1.2em;
             margin: 10px 0;
         }
 
         .product-item p {
-            font-size: 16px;
+            font-size: 1em;
+            margin: 5px 0;
         }
 
         footer {
-            margin-top: 20px;
+            margin-top: 40px;
             background-color: #333;
             color: white;
-            padding: 20px;
+            padding: 40px 20px;
             text-align: center;
-            width: 100%;
             box-sizing: border-box;
         }
 
@@ -121,8 +140,8 @@
             display: flex;
             justify-content: space-around;
             flex-wrap: wrap;
-            text-align: left;
             padding: 20px;
+            text-align: left;
         }
 
         footer .footer-section div {
@@ -132,6 +151,7 @@
 
         footer .footer-section div h3 {
             color: #ffcc00;
+            margin-bottom: 10px;
         }
 
         footer p {
@@ -140,7 +160,6 @@
         }
 
         footer .social {
-            text-align: center;
             margin-top: 20px;
         }
 
@@ -148,9 +167,14 @@
             color: #fff;
             text-decoration: none;
             margin: 0 10px;
+            font-size: 1.2em;
+            transition: color 0.3s;
         }
 
-        /* Responsividade */
+        footer .social a:hover {
+            color: #ffcc00;
+        }
+
         @media (max-width: 768px) {
             header img {
                 max-width: 200px;
@@ -159,6 +183,7 @@
             nav {
                 display: flex;
                 flex-direction: column;
+                align-items: center;
             }
 
             nav a {
@@ -167,30 +192,16 @@
 
             footer .footer-section {
                 flex-direction: column;
+                align-items: center;
             }
 
             footer .social {
-                margin-top: 40px;
+                margin-top: 30px;
             }
-        }
 
-        /* Estilo para botões de categorias */
-        .category-buttons {
-            margin-top: 20px;
-        }
-
-        .category-buttons a {
-            display: inline-block;
-            padding: 10px 20px;
-            margin: 5px;
-            background-color: #ff6600;
-            color: #fff;
-            text-decoration: none;
-            border-radius: 4px;
-        }
-
-        .category-buttons a:hover {
-            background-color: #cc5200;
+            .product-item {
+                width: calc(50% - 20px); /* 2 cards por linha em dispositivos móveis */
+            }
         }
     </style>
 </head>
@@ -298,7 +309,7 @@
         <!-- Rodapé -->
         <footer id="contacto">
             <div class="footer-section">
-                <div class="contact-info" style="margin-right: -5em;">
+                <div class="contact-info">
                     <h3>Contacto</h3>
                     <p>Tel/Fax: +351 259 351 024</p>
                     <p>Móvel: +351 967 571 033</p>
@@ -324,8 +335,8 @@
             </div>
 
             <div class="social">
-                <a href="#"><i class="fa-brands fa-facebook" style="margin-right: 6px;"></i>Facebook</a>
-                <a href="#"><i class="fa-brands fa-instagram" style="margin-right: 6px;"></i>Instagram</a>
+                <a href="#"><i class="fa-brands fa-facebook"></i> Facebook</a>
+                <a href="#"><i class="fa-brands fa-instagram"></i> Instagram</a>
                 <p>&copy; 2024 Civica - Todos os direitos reservados</p>
             </div>
         </footer>
