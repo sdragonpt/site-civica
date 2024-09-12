@@ -7,13 +7,20 @@
     <!-- Bootstrap CSS -->
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        .card-img-top {
-            width: 100%;
-            object-fit: cover;
-        }
         .card {
             width: 100%; /* Ajusta a largura do card para ocupar o máximo possível */
             max-width: 300px; /* Ajuste a largura máxima do card conforme necessário */
+            height: 400px; /* Altura fixa para as cards */
+            display: flex;
+            flex-direction: column;
+        }
+        .card-img-top {
+            width: 100%;
+            height: 200px; /* Altura da imagem */
+            object-fit: cover;
+        }
+        .card-body {
+            flex: 1; /* Faz o corpo da card ocupar o espaço restante */
         }
         .navbar-brand img {
             height: 60px; /* Ajuste o tamanho da imagem conforme necessário */
@@ -31,16 +38,6 @@
         .card-categories {
             font-size: 0.875rem; /* Tamanho da fonte menor para as categorias */
             color: #6c757d; /* Cor do texto das categorias (opcional) */
-        }
-        /* Ajuste o padding para evitar que o conteúdo fique muito próximo da borda */
-        .container {
-            padding-left: 0;
-            padding-right: 0;
-        }
-        /* Ajusta o layout para garantir que as colunas não fiquem uma em cima da outra */
-        .row {
-            margin-left: 0;
-            margin-right: 0;
         }
     </style>
 </head>
