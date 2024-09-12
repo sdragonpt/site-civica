@@ -24,8 +24,12 @@
 
         .footer-section {
             background-color: #333;
-            color: white;
+            color: black;
+            padding: 20px 0; /* Adicione algum padding para garantir que o footer tenha altura suficiente */
+            position: relative; /* Garantir que o footer não esteja sendo posicionado fora da tela */
+            z-index: 1000; /* Para garantir que o footer fique acima de outros elementos */
         }
+
 
         .footer-section h3 {
             color: #ffcc00;
