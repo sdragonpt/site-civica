@@ -50,7 +50,7 @@
             margin-right: 0;
         }
         .navbar-light {
-            background-color: #343a40; /* Cor de fundo escura para a navbar */
+            background-color: #333; /* Cor de fundo escura para a navbar */
         }
         .navbar-light .navbar-nav .nav-link {
             color: #ffffff; /* Cor do texto dos itens de menu */
@@ -84,7 +84,7 @@
                 <!-- Adicione mais itens de menu conforme necessário -->
             </ul>
             <form class="form-inline my-2 my-lg-0" action="index.php" method="GET">
-                <input class="form-control form-control-sm mr-sm-2" type="search" name="search" placeholder="Buscar" aria-label="Search">
+                <input class="form-control form-control-sm mr-sm-2" type="search" name="search" placeholder="Buscar" aria-label="Search" value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>">
                 <button class="btn btn-outline-success btn-sm my-2 my-sm-0" type="submit">Buscar</button>
             </form>
         </div>
@@ -105,7 +105,7 @@
                         $categoria_nome = htmlspecialchars($categoria['nome']);
                     ?>
                         <li class="list-group-item">
-                            <a href="?categoria=<?php echo htmlspecialchars($categoria['id']); ?>">
+                            <a href="?categoria=<?php echo htmlspecialchars($categoria['id']); ?>&search=<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>">
                                 <?php echo $categoria_nome; ?>
                             </a>
                         </li>
@@ -143,8 +143,8 @@
 
                 <div class="row">
                     <?php
-                    // Função para obter os produtos recentes com suas imagens e categorias
-                    function get_produtos_recentes($sort_by = 'recent', $categoria_id = null) {
+                    // Função para obter os produtos com base nos filtros e ordenação
+                    function get_produtos($search = '', $sort_by = 'recent', $categoria_id = null) {
                         global $conn;
                         $order_by = 'p.id DESC';
                         if ($sort_by === 'name') {
@@ -157,6 +157,11 @@
                                 FROM produtos p
                                 LEFT JOIN imagens i ON p.id = i.produto_id
                                 WHERE i.imagem IS NOT NULL";
+                        
+                        if ($search) {
+                            $search = $conn->real_escape_string($search);
+                            $sql .= " AND p.nome LIKE '%$search%'";
+                        }
                         
                         if ($categoria_id) {
                             $sql .= " AND p.id IN (SELECT produto_id FROM produto_categoria WHERE categoria_id = $categoria_id)";
@@ -181,13 +186,14 @@
                         return $stmt->get_result();
                     }
 
-                    // Obtém os parâmetros de ordenação e filtro
+                    // Obtém os parâmetros de ordenação, pesquisa e filtro
                     $sort_by = isset($_GET['sort']) ? $_GET['sort'] : 'recent';
                     $categoria_id = isset($_GET['categoria']) ? $_GET['categoria'] : null;
+                    $search = isset($_GET['search']) ? $_GET['search'] : '';
 
-                    // Obtém os produtos recentes
-                    $produtos_recentes = get_produtos_recentes($sort_by, $categoria_id);
-                    while ($produto = $produtos_recentes->fetch_assoc()): 
+                    // Obtém os produtos com base nos filtros e ordenação
+                    $produtos = get_produtos($search, $sort_by, $categoria_id);
+                    while ($produto = $produtos->fetch_assoc()): 
                         $produto_id = $produto['id'];
                         $categorias_result = get_categorias_por_produto($produto_id);
                         $categorias = [];
