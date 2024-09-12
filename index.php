@@ -118,7 +118,7 @@
 
                 <div class="row">
                     <?php
-                    // Função para obter os produtos recentes com suas imagens
+                    // Função para obter os produtos recentes com suas imagens e categorias
                     function get_produtos_recentes() {
                         global $conn;
                         $sql = "SELECT p.id, p.nome, p.descricao, p.preco, i.imagem 
@@ -130,17 +130,39 @@
                         return $conn->query($sql);
                     }
 
+                    // Função para obter as categorias de um produto específico
+                    function get_categorias_por_produto($produto_id) {
+                        global $conn;
+                        $stmt = $conn->prepare("
+                            SELECT c.nome 
+                            FROM categorias c
+                            INNER JOIN produto_categoria pc ON c.id = pc.categoria_id
+                            WHERE pc.produto_id = ?
+                        ");
+                        $stmt->bind_param("i", $produto_id);
+                        $stmt->execute();
+                        return $stmt->get_result();
+                    }
+
                     // Obtém os produtos recentes
                     $produtos_recentes = get_produtos_recentes();
-                    while ($produto = $produtos_recentes->fetch_assoc()): ?>
+                    while ($produto = $produtos_recentes->fetch_assoc()): 
+                        $produto_id = $produto['id'];
+                        $categorias_result = get_categorias_por_produto($produto_id);
+                        $categorias = [];
+                        while ($categoria = $categorias_result->fetch_assoc()) {
+                            $categorias[] = htmlspecialchars($categoria['nome']);
+                        }
+                        $categorias_str = implode(', ', $categorias);
+                    ?>
                         <div class="col-md-3 mb-4">
                             <div class="card">
                                 <img src="images/<?php echo htmlspecialchars($produto['imagem']); ?>" class="card-img-top" alt="<?php echo htmlspecialchars($produto['nome']); ?>">
                                 <div class="card-body">
-                                    <p class="card-categories">Categoria 1, Categoria 2</p> <!-- Adicione as categorias aqui -->
+                                    <p class="card-categories"><?php echo $categorias_str; ?></p>
                                     <h5 class="card-title"><?php echo htmlspecialchars($produto['nome']); ?></h5>
                                     <p class="card-text"><?php echo htmlspecialchars($produto['descricao']); ?></p>
-                                    <p class="card-text"><strong><?php echo htmlspecialchars($produto['preco']); ?>€</strong></p>
+                                    <p class="card-text"><strong>R$ <?php echo htmlspecialchars($produto['preco']); ?></strong></p>
                                     <a href="#" class="btn btn-primary">Botão</a>
                                 </div>
                             </div>
