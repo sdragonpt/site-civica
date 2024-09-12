@@ -1,3 +1,13 @@
+<?php
+// Verifica se o caminho solicitado é um arquivo ou diretório real
+if (file_exists($_SERVER['REQUEST_URI']) || is_dir($_SERVER['REQUEST_URI'])) {
+    return false; // Deixa o servidor web lidar com o arquivo ou diretório
+}
+
+// Trata todas as solicitações como uma página PHP
+include('index.php');
+?>
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>

@@ -3,14 +3,12 @@ DirectoryIndex index.php index.html
 # Habilita o módulo de reescrita
 RewriteEngine On
 
-# Redireciona todas as solicitações para index.php
+# Remove index.php da URL
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^index\.php/(.*)$ /$1 [L,R=301]
+
+# Redireciona URLs amigáveis para index.php
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.*)$ index.php?$1 [L,QSA]
-
-# Redireciona /admin para admin.php
-RewriteRule ^admin$ admin.php [L]
-
-# Adicione outras regras para suas páginas de backoffice aqui
-# Por exemplo:
-RewriteRule ^login$ login.php [L]
