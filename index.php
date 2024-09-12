@@ -12,8 +12,7 @@
             object-fit: cover;
         }
         .card {
-            width: 100%; /* Ajusta a largura do card para ocupar o máximo possível */
-            max-width: 300px; /* Ajuste a largura máxima do card conforme necessário */
+            width: 300px; /* Ajuste a largura máxima do card conforme necessário */
         }
         .navbar-brand img {
             height: 60px; /* Ajuste o tamanho da imagem conforme necessário */
