@@ -320,16 +320,15 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
     <script>
-        // Função para remover o fragmento da URL
+        // Função para remover a âncora da URL
         function removeHash() {
-            if (window.location.hash) {
-                history.replaceState(null, null, window.location.pathname + window.location.search);
-            }
+            // Atualiza a URL removendo o fragmento (âmbora) sem recarregar a página
+            history.replaceState(null, null, location.pathname + location.search);
         }
 
         // Submete o formulário automaticamente ao alterar a ordenação ou a categoria
         document.getElementById('sortByName').addEventListener('change', function() {
-            removeHash(); // Remove o fragmento da URL
+            removeHash(); // Remove a âncora da URL
             document.getElementById('filtersForm').submit();
         });
 
@@ -337,10 +336,11 @@
             // Limpa o campo de pesquisa ao selecionar uma nova categoria
             var searchInput = document.querySelector('input[name="search"]');
             searchInput.value = '';
-            removeHash(); // Remove o fragmento da URL
+            removeHash(); // Remove a âncora da URL
             document.getElementById('filtersForm').submit();
         });
     </script>
+
 
 </body>
 </html>
