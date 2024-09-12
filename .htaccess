@@ -3,12 +3,7 @@ DirectoryIndex index.php index.html
 # Habilita o módulo de reescrita
 RewriteEngine On
 
-# Remove index.php da URL
+# Redireciona todas as requisições para index.php
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^index\.php/(.*)$ /$1 [L,R=301]
-
-# Redireciona URLs amigáveis para index.php
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.*)$ index.php?$1 [L,QSA]
+RewriteRule ^(.*)$ index.php [L,QSA]
