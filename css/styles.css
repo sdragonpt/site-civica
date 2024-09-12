@@ -78,22 +78,29 @@ nav a:hover {
     margin: 10px;
     width: calc(25% - 20px); /* 4 cards por linha, com espaço entre eles */
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 350px; /* Altura fixa para os cards */
+    overflow: hidden; /* Garante que nada ultrapasse o card */
 }
 
 .product-item img {
     width: 100%;
-    height: auto; /* Mantém a proporção da imagem */
+    height: 200px; /* Altura fixa para as imagens */
     object-fit: cover; /* Ajusta a imagem ao tamanho do contêiner */
+    margin-bottom: 10px; /* Espaço abaixo da imagem */
 }
 
-.product-item h3 {
-    font-size: 18px;
-    margin: 10px 0;
+.product-item h3, .product-item p {
+    margin: 10px;
+    text-align: center;
 }
 
 .product-item p {
     font-size: 16px;
 }
+
 
 .fim{
     margin-top: 50px;
