@@ -162,7 +162,7 @@
                                     <p class="card-categories"><?php echo $categorias_str; ?></p>
                                     <h5 class="card-title"><?php echo htmlspecialchars($produto['nome']); ?></h5>
                                     <p class="card-text"><?php echo htmlspecialchars($produto['descricao']); ?></p>
-                                    <p class="card-text"><strong>R$ <?php echo htmlspecialchars($produto['preco']); ?></strong></p>
+                                    <p class="card-text"><strong><?php echo htmlspecialchars($produto['preco']); ?> €</strong></p>
                                     <a href="#" class="btn btn-primary">Botão</a>
                                 </div>
                             </div>
