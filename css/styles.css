@@ -62,7 +62,6 @@ nav a:hover {
 .content img {
     max-width: 100%;
     height: auto;
-    margin: 20px 0;
 }
 
 .product-list {
@@ -76,14 +75,13 @@ nav a:hover {
     background-color: #fff;
     border: 1px solid #ddd;
     border-radius: 5px;
-    padding: 10px;
     margin: 10px;
     width: calc(25% - 20px); /* 4 cards por linha, com espaço entre eles */
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
 .product-item img {
-    max-width: 200px;
+    width: 100%;
     height: auto; /* Mantém a proporção da imagem */
     object-fit: cover; /* Ajusta a imagem ao tamanho do contêiner */
 }
