@@ -68,7 +68,7 @@
 <body>
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light">
-        <a class="navbar-brand" href="#">
+        <a class="navbar-brand" href="index.php">
             <img src="images/Logotipo Civica 2019 - Ver1.png" alt="Civica">
         </a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -77,7 +77,7 @@
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav mr-auto">
                 <li class="nav-item active">
-                    <a class="nav-link" href="#">Início <span class="sr-only">(página atual)</span></a>
+                    <a class="nav-link" href="index.php">Início <span class="sr-only">(página atual)</span></a>
                 </li>
                 <!-- Adicione mais itens de menu conforme necessário -->
             </ul>
