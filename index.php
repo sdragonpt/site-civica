@@ -8,7 +8,7 @@
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <style>
         .container {
-            max-width: 1400px; /* Ajuste o valor conforme necessário */
+            max-width: 1600px; /* Ajuste o valor conforme necessário */
         }
         .card-img-top {
             width: 100%;
