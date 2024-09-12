@@ -92,15 +92,32 @@ nav a:hover {
     margin-bottom: 10px; /* Espaço abaixo da imagem */
 }
 
-.product-item h3, .product-item p {
-    margin: 10px;
+.product-item .card-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 100%;
+    padding: 10px;
     text-align: center;
+    height: 100%;
 }
 
-.product-item p {
+.product-item .card-body .price-button {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: auto; /* Faz com que o botão fique no fundo do card */
+}
+
+.product-item .card-body h3 {
+    font-size: 18px;
+    margin: 10px 0;
+}
+
+.product-item .card-body p {
     font-size: 16px;
+    margin: 10px 0;
 }
-
 
 .fim{
     margin-top: 50px;
