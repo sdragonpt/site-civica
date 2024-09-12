@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Página Principal da Loja</title>
+    <meta name="description" content="Bem-vindo ao nosso site! Confira o nosso estoque de equipamentos, máquinas e ferramentas para construção civil e obras públicas, com preços imbatíveis.">
+    <meta name="keywords" content="maquinaria, equipamento, construção, exportação, importação, aluguel, máquinas, ferramentas, obras públicas">
+    <meta name="author" content="Civica Engenharia">
+    <title>Civica Equipamentos - Oficial Webpage</title>
     <!-- Bootstrap CSS -->
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <style>
@@ -320,8 +323,15 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
     <script>
+        // Função para remover a âncora da URL
+        function removeHash() {
+            // Atualiza a URL removendo o fragmento (âmbora) sem recarregar a página
+            history.replaceState(null, null, location.pathname + location.search);
+        }
+
         // Submete o formulário automaticamente ao alterar a ordenação ou a categoria
         document.getElementById('sortByName').addEventListener('change', function() {
+            removeHash(); // Remove a âncora da URL
             document.getElementById('filtersForm').submit();
         });
 
@@ -329,8 +339,11 @@
             // Limpa o campo de pesquisa ao selecionar uma nova categoria
             var searchInput = document.querySelector('input[name="search"]');
             searchInput.value = '';
+            removeHash(); // Remove a âncora da URL
             document.getElementById('filtersForm').submit();
         });
     </script>
+
+
 </body>
 </html>
