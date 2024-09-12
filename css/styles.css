@@ -43,11 +43,12 @@ nav a {
 }
 
 nav a:hover {
-    background-color: #444;
+    background-color: #222;
 }
 
 .content {
     margin-top: 0px;
+    margin-bottom: 30px;
     background-color: #fff;
     padding: 20px;
     border-radius: 10px;
@@ -183,12 +184,13 @@ footer .social a {
     display: inline-block;
     padding: 10px 20px;
     margin: 5px;
-    background-color: #ff6600;
+    background-color: #333;
     color: #fff;
     text-decoration: none;
     border-radius: 4px;
+    margin-bottom: 20px;
 }
 
 .category-buttons a:hover {
-    background-color: #cc5200;
+    background-color: #222;
 }
