@@ -7,6 +7,10 @@
     <!-- Bootstrap CSS -->
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <style>
+        html {
+            scroll-behavior: smooth;
+        }
+
         body {
             background-color: #f8f9fa; /* Cor de fundo mais escura */
         }
@@ -47,14 +51,12 @@
             margin-left: 0;
             margin-right: 0;
         }
-        .navbar-light {
-            background-color: #343a40; /* Cor de fundo escura para a navbar */
-        }
         .navbar-light .navbar-nav .nav-link {
             color: #ffffff; /* Cor do texto dos itens de menu */
         }
         .form-control-sm, .btn-outline-success {
             color: #343a40; /* Cor do texto da busca e botão */
+            border-color: #343a40 !important;
         }
         .btn-outline-success {
             border-color: #343a40; /* Cor da borda do botão */
@@ -62,6 +64,54 @@
         .btn-outline-success:hover {
             background-color: #343a40; /* Cor de fundo ao passar o mouse */
             color: #ffffff; /* Cor do texto ao passar o mouse */
+        }
+
+        a.btn.btn-primary {
+            background-color: #343a40;
+            border-color: #343a40 !important;
+        }
+
+        a.btn.btn-primary:hover{
+            background-color: #555;
+            border-color: #555 !important;
+        }
+
+        a.nav-link{
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        a.nav-link:hover{
+            font-weight: bold;
+            color: #555 !important;
+        }
+
+        /* Estilos do Rodapé */
+        .footer-section {
+            display: flex;
+            justify-content: space-between;
+            padding: 20px;
+            background-color: #333;
+            color: #ffffff;
+        }
+        .footer-section h3 {
+            margin-top: 0;
+        }
+        .footer-section p {
+            margin: 0;
+        }
+        .social {
+            text-align: center;
+            padding: 20px;
+            background-color: #212529;
+            color: #ffffff;
+        }
+        .social a {
+            color: #ffcc00;
+            margin: 0 10px;
+        }
+        .social i {
+            margin-right: 6px;
         }
     </style>
 </head>
@@ -78,6 +128,9 @@
             <ul class="navbar-nav mr-auto">
                 <li class="nav-item active">
                     <a class="nav-link" href="index.php">Início <span class="sr-only">(página atual)</span></a>
+                </li>
+                <li class="nav-item active">
+                    <a class="nav-link" href="#contacto">Contactos <span class="sr-only">(página atual)</span></a>
                 </li>
                 <!-- Adicione mais itens de menu conforme necessário -->
             </ul>
@@ -219,6 +272,47 @@
             </div>
         </div>
     </div>
+
+    <!-- Rodapé -->
+    <div class="fim" style="background-color: #333; margin-top: 8vw">
+        <footer id="contacto" style="background-color: #333; color: #ffffff;">
+            <div class="container" style="max-width: 1300px; padding: 20px 0;">
+                <div class="footer-section row">
+                    <div class="contact-info col-md-4">
+                        <h3>Contacto</h3>
+                        <p>Tel/Fax: +351 259 351 024</p>
+                        <p>Móvel: +351 967 571 033</p>
+                        <p>WhatsApp: +351 967 571 033</p>
+                        <p>Email: <a href="mailto:civica@civica.pt" style="color: #ffcc00;">civica@civica.pt</a></p>
+                    </div>
+
+                    <div class="location col-md-4">
+                        <h3>Localização</h3>
+                        <p>Zona Industrial de Constantim, Lote 143 e 144</p>
+                        <p>5000-082 Vila Real, Portugal</p>
+                        <p>GPS: Lat. 41°16'43'' N - Long. 7°42'22'' W</p>
+                    </div>
+
+                    <div class="about col-md-4">
+                        <h3>Sobre Nós</h3>
+                        <p>Cívica - Construções, Engenharia e Equipamentos, Lda</p>
+                        <p>Sociedade por Quotas</p>
+                        <p>Capital Social 100.000,00€</p>
+                        <p>NIF/EORI: PT 504 117 246</p>
+                        <p>Alvará: nº 43194</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Seção Social -->
+            <div class="social" style="background-color: #222; color: #ffffff; padding: 20px 0; text-align: center;">
+                <a href="#" style="color: #ffcc00; margin-right: 6px;"><i class="fa-brands fa-facebook"></i> Facebook</a>
+                <a href="#" style="color: #ffcc00; margin-right: 6px;"><i class="fa-brands fa-instagram"></i> Instagram</a>
+                <p class="mt-2">&copy; 2024 Civica - Todos os direitos reservados</p>
+            </div>
+        </footer>
+    </div>
+
 
     <!-- Bootstrap JS, Popper.js, e jQuery -->
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
