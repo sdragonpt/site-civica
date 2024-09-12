@@ -7,6 +7,9 @@
     <!-- Bootstrap CSS -->
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <style>
+        body {
+            background-color: #f8f9fa; /* Cor de fundo mais escura */
+        }
         .container {
             max-width: 1600px; /* Ajuste o valor conforme necessário */
         }
@@ -46,11 +49,27 @@
             margin-left: 0;
             margin-right: 0;
         }
+        .navbar-light {
+            background-color: #343a40; /* Cor de fundo escura para a navbar */
+        }
+        .navbar-light .navbar-nav .nav-link {
+            color: #ffffff; /* Cor do texto dos itens de menu */
+        }
+        .form-control-sm, .btn-outline-success {
+            color: #343a40; /* Cor do texto da busca e botão */
+        }
+        .btn-outline-success {
+            border-color: #343a40; /* Cor da borda do botão */
+        }
+        .btn-outline-success:hover {
+            background-color: #343a40; /* Cor de fundo ao passar o mouse */
+            color: #ffffff; /* Cor do texto ao passar o mouse */
+        }
     </style>
 </head>
 <body>
     <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <nav class="navbar navbar-expand-lg navbar-light">
         <a class="navbar-brand" href="#">
             <img src="images/Logotipo Civica 2019 - Ver1.png" alt="Civica">
         </a>
@@ -64,8 +83,8 @@
                 </li>
                 <!-- Adicione mais itens de menu conforme necessário -->
             </ul>
-            <form class="form-inline my-2 my-lg-0">
-                <input class="form-control form-control-sm mr-sm-2" type="search" placeholder="Buscar" aria-label="Search">
+            <form class="form-inline my-2 my-lg-0" action="index.php" method="GET">
+                <input class="form-control form-control-sm mr-sm-2" type="search" name="search" placeholder="Buscar" aria-label="Search">
                 <button class="btn btn-outline-success btn-sm my-2 my-sm-0" type="submit">Buscar</button>
             </form>
         </div>
@@ -85,7 +104,11 @@
                     while ($categoria = $categorias_result->fetch_assoc()): 
                         $categoria_nome = htmlspecialchars($categoria['nome']);
                     ?>
-                        <li class="list-group-item"><?php echo $categoria_nome; ?></li>
+                        <li class="list-group-item">
+                            <a href="?categoria=<?php echo htmlspecialchars($categoria['id']); ?>">
+                                <?php echo $categoria_nome; ?>
+                            </a>
+                        </li>
                     <?php endwhile; ?>
                 </ul>
             </div>
@@ -95,15 +118,15 @@
                 <h2>Produtos</h2>
                 <div class="form-group">
                     <label for="sortByName">Ordenar por:</label>
-                    <select class="form-control form-control-sm" id="sortByName">
-                        <option value="name">Nome</option>
-                        <option value="price">Preço</option>
+                    <select class="form-control form-control-sm" id="sortByName" name="sort">
+                        <option value="recent" <?php echo isset($_GET['sort']) && $_GET['sort'] == 'recent' ? 'selected' : ''; ?>>Recente</option>
+                        <option value="name" <?php echo isset($_GET['sort']) && $_GET['sort'] == 'name' ? 'selected' : ''; ?>>Nome</option>
+                        <option value="price" <?php echo isset($_GET['sort']) && $_GET['sort'] == 'price' ? 'selected' : ''; ?>>Preço</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label for="filterCategory">Categoria:</label>
-                    <select class="form-control form-control-sm" id="filterCategory">
-                        <!-- Categorias serão carregadas da base de dados -->
+                    <select class="form-control form-control-sm" id="filterCategory" name="categoria">
                         <option value="">Todas</option>
                         <?php
                         $categorias_result->data_seek(0); // Resetar o ponteiro do resultado para reusar a variável
@@ -111,7 +134,9 @@
                             $categoria_id = htmlspecialchars($categoria['id']);
                             $categoria_nome = htmlspecialchars($categoria['nome']);
                         ?>
-                            <option value="<?php echo $categoria_id; ?>"><?php echo $categoria_nome; ?></option>
+                            <option value="<?php echo $categoria_id; ?>" <?php echo isset($_GET['categoria']) && $_GET['categoria'] == $categoria_id ? 'selected' : ''; ?>>
+                                <?php echo $categoria_nome; ?>
+                            </option>
                         <?php endwhile; ?>
                     </select>
                 </div>
@@ -119,13 +144,25 @@
                 <div class="row">
                     <?php
                     // Função para obter os produtos recentes com suas imagens e categorias
-                    function get_produtos_recentes() {
+                    function get_produtos_recentes($sort_by = 'recent', $categoria_id = null) {
                         global $conn;
+                        $order_by = 'p.id DESC';
+                        if ($sort_by === 'name') {
+                            $order_by = 'p.nome ASC';
+                        } elseif ($sort_by === 'price') {
+                            $order_by = 'p.preco ASC';
+                        }
+
                         $sql = "SELECT p.id, p.nome, p.descricao, p.preco, i.imagem 
                                 FROM produtos p
                                 LEFT JOIN imagens i ON p.id = i.produto_id
-                                WHERE i.imagem IS NOT NULL
-                                ORDER BY p.id DESC
+                                WHERE i.imagem IS NOT NULL";
+                        
+                        if ($categoria_id) {
+                            $sql .= " AND p.id IN (SELECT produto_id FROM produto_categoria WHERE categoria_id = $categoria_id)";
+                        }
+                        
+                        $sql .= " ORDER BY $order_by
                                 LIMIT 8"; // Ajuste o limite conforme necessário
                         return $conn->query($sql);
                     }
@@ -144,8 +181,12 @@
                         return $stmt->get_result();
                     }
 
+                    // Obtém os parâmetros de ordenação e filtro
+                    $sort_by = isset($_GET['sort']) ? $_GET['sort'] : 'recent';
+                    $categoria_id = isset($_GET['categoria']) ? $_GET['categoria'] : null;
+
                     // Obtém os produtos recentes
-                    $produtos_recentes = get_produtos_recentes();
+                    $produtos_recentes = get_produtos_recentes($sort_by, $categoria_id);
                     while ($produto = $produtos_recentes->fetch_assoc()): 
                         $produto_id = $produto['id'];
                         $categorias_result = get_categorias_por_produto($produto_id);
