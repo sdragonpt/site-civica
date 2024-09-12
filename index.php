@@ -118,7 +118,7 @@
         }
 
         li.list-group-item{
-            color: #333;
+            color: #333 !important;
         }
     </style>
 </head>
