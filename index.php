@@ -7,191 +7,12 @@
     <meta name="keywords" content="maquinaria, equipamento, construção, exportação, importação, aluguel, máquinas, ferramentas, obras públicas">
     <meta name="author" content="Civica Engenharia">
     <script src="https://kit.fontawesome.com/753ec85429.js" crossorigin="anonymous"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="./css/styles.css">
     <title>Civica Equipamentos - Oficial Webpage</title>
     
     <style>
-        /* Estilo para rolagem suave */
-        html {
-            scroll-behavior: smooth;
-        }
-
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            color: #333;
-            text-align: center;
-        }
-
-        #container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px 20px 0px 20px;
-        }
-
-        header {
-            background-color: #f4f4f4;
-            color: #fff;
-            padding-top: 10px;
-        }
-
-        header img {
-            max-width: 400px;
-            float: left;
-        }
-
-        nav {
-            margin: 30px 0;
-        }
-
-        nav a {
-            color: #fff;
-            text-decoration: none;
-            margin: 0 15px;
-            padding: 10px;
-            background-color: #ff6600;
-            border-radius: 4px;
-        }
-
-        nav a:hover {
-            background-color: #cc5200;
-        }
-
-        .content {
-            margin-top: 26px;
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .content h2 {
-            color: #004080;
-        }
-
-        .content img {
-            max-width: 100%;
-            height: auto;
-            margin: 20px 0;
-        }
-
-        .product-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px; /* Espaçamento entre os cards */
-            justify-content: space-between;
-        }
-
-        .product-item {
-            background-color: #fff;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            padding: 10px;
-            margin: 10px;
-            width: calc(25% - 20px); /* 4 cards por linha, com espaço entre eles */
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .product-item img {
-            max-width: 200px;
-            height: auto; /* Mantém a proporção da imagem */
-            object-fit: cover; /* Ajusta a imagem ao tamanho do contêiner */
-        }
-
-        .product-item h3 {
-            font-size: 18px;
-            margin: 10px 0;
-        }
-
-        .product-item p {
-            font-size: 16px;
-        }
-
-        footer {
-            margin-top: 20px;
-            background-color: #333;
-            color: white;
-            padding: 20px;
-            text-align: center;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        footer .footer-section {
-            display: flex;
-            justify-content: space-around;
-            flex-wrap: wrap;
-            text-align: left;
-            padding: 20px;
-        }
-
-        footer .footer-section div {
-            flex: 1;
-            margin: 10px;
-        }
-
-        footer .footer-section div h3 {
-            color: #ffcc00;
-        }
-
-        footer p {
-            margin: 5px 0;
-            font-size: 15px;
-        }
-
-        footer .social {
-            text-align: center;
-            margin-top: 20px;
-        }
-
-        footer .social a {
-            color: #fff;
-            text-decoration: none;
-            margin: 0 10px;
-        }
-
-        /* Responsividade */
-        @media (max-width: 768px) {
-            header img {
-                max-width: 200px;
-            }
-
-            nav {
-                display: flex;
-                flex-direction: column;
-            }
-
-            nav a {
-                margin: 10px 0;
-            }
-
-            footer .footer-section {
-                flex-direction: column;
-            }
-
-            footer .social {
-                margin-top: 40px;
-            }
-        }
-
-        /* Estilo para botões de categorias */
-        .category-buttons {
-            margin-top: 20px;
-        }
-
-        .category-buttons a {
-            display: inline-block;
-            padding: 10px 20px;
-            margin: 5px;
-            background-color: #ff6600;
-            color: #fff;
-            text-decoration: none;
-            border-radius: 4px;
-        }
-
-        .category-buttons a:hover {
-            background-color: #cc5200;
-        }
+       
     </style>
 </head>
 <body>
@@ -199,17 +20,21 @@
         <!-- Cabeçalho -->
         <header>
             <img src="images/Logotipo Civica 2019 - Ver1.png" alt="Logotipo Civica">
-            <h1>Civica Equipamentos</h1>
-            <p>Venda e Aluguer de Máquinas e Equipamentos</p>
-            <hr style="margin-bottom: 0px">
+            <h1 style="color: black; font-weight:bold;">Civica Equipamentos</h1>
+            <p style="color: black;">Venda e Aluguer de Máquinas e Equipamentos</p>
         </header>
 
         <!-- Navegação -->
         <nav>
+            <hr>
             <a href="#categorias">Categorias</a>
             <a href="#contacto">Contacto</a>
+            <hr>
         </nav>
 
+    </div>
+
+        <div id="container">
         <!-- Conteúdo Principal -->
         <?php
         include('config.php'); // Inclua o arquivo de configuração do banco de dados
@@ -231,7 +56,7 @@
         ?>
 
         <div class="content">
-            <h2>Últimos Produtos</h2>
+            <h2 style="font-weight: bold;">Últimos Produtos</h2>
             <div class="product-list">
                 <?php while ($produto = $produtos_recentes->fetch_assoc()): ?>
                     <div class="product-item">
@@ -280,7 +105,7 @@
             $produtos_result = $stmt->get_result();
         ?>
             <div class="content" id="<?php echo $categoria_nome; ?>">
-                <h2><?php echo $categoria_nome; ?></h2>
+                <h2 style="font-weight:bold;"><?php echo $categoria_nome; ?></h2>
                 <div class="product-list">
                     <?php while ($produto = $produtos_result->fetch_assoc()): ?>
                         <div class="product-item">
@@ -294,8 +119,9 @@
                 </div>
             </div>
         <?php endwhile; ?>
-
-        <!-- Rodapé -->
+    </div>
+    <!-- Rodapé -->
+    <div class="fim">
         <footer id="contacto">
             <div class="footer-section">
                 <div class="contact-info" style="margin-right: -5em;">
@@ -331,4 +157,5 @@
         </footer>
     </div>
 </body>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 </html>

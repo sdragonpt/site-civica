@@ -1,0 +1,194 @@
+ /* Estilo para rolagem suave */
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    color: #333;
+    text-align: center;
+}
+
+#container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px 20px 0px 20px;
+}
+
+header {
+    background-color: #f4f4f4;
+    color: #fff;
+    padding-top: 10px;
+    
+}
+
+header img {
+    max-width: 400px;
+    float: left;
+}
+
+nav {
+    margin: 30px 0;
+}
+
+nav a {
+    color: #fff;
+    text-decoration: none;
+    margin: 0 15px;
+    padding: 10px;
+    border-radius: 4px;
+    background-color: #333;
+}
+
+nav a:hover {
+    background-color: #444;
+}
+
+.content {
+    margin-top: 26px;
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.content h2 {
+    color: #004080;
+}
+
+.content img {
+    max-width: 100%;
+    height: auto;
+    margin: 20px 0;
+}
+
+.product-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px; /* Espaçamento entre os cards */
+    justify-content: space-between;
+}
+
+.product-item {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 10px;
+    margin: 10px;
+    width: calc(25% - 20px); /* 4 cards por linha, com espaço entre eles */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.product-item img {
+    max-width: 200px;
+    height: auto; /* Mantém a proporção da imagem */
+    object-fit: cover; /* Ajusta a imagem ao tamanho do contêiner */
+}
+
+.product-item h3 {
+    font-size: 18px;
+    margin: 10px 0;
+}
+
+.product-item p {
+    font-size: 16px;
+}
+
+.fim{
+    margin-top: 50px;
+}
+
+footer {
+    bottom: 0px;
+    margin-top: 20px;
+    background-color: #333;
+    color: white;
+    padding: 20px;
+    text-align: center;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+footer .footer-section {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    text-align: left;
+    padding: 20px;
+}
+
+.footer-section{
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px 20px 0px 20px;
+}
+
+footer .footer-section div {
+    flex: 1;
+    margin: 10px;
+}
+
+footer .footer-section div h3 {
+    color: #ffcc00;
+}
+
+footer p {
+    margin: 5px 0;
+    font-size: 15px;
+}
+
+footer .social {
+    text-align: center;
+    margin-top: 20px;
+}
+
+footer .social a {
+    color: #fff;
+    text-decoration: none;
+    margin: 0 10px;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    header img {
+        max-width: 200px;
+    }
+
+    nav {
+        display: flex;
+        flex-direction: column;
+    }
+
+    nav a {
+        margin: 10px 0;
+    }
+
+    footer .footer-section {
+        flex-direction: column;
+    }
+
+    footer .social {
+        margin-top: 40px;
+    }
+}
+
+/* Estilo para botões de categorias */
+.category-buttons {
+    margin-top: 20px;
+}
+
+.category-buttons a {
+    display: inline-block;
+    padding: 10px 20px;
+    margin: 5px;
+    background-color: #ff6600;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 4px;
+}
+
+.category-buttons a:hover {
+    background-color: #cc5200;
+}
