@@ -1,36 +1,3 @@
-<?php
-// Obtém a URL da requisição
-$request = $_SERVER['REQUEST_URI'];
-
-// Remove qualquer query string
-$request = strtok($request, '?');
-
-// Mapeia as URLs para seus arquivos PHP
-$routes = [
-    '/' => 'index.php',
-    '/login' => 'login.php',
-    '/admin' => 'admin.php',
-    // Adicione outras rotas aqui
-];
-
-// Verifica se a rota existe e inclui o arquivo correspondente
-if (array_key_exists($request, $routes)) {
-    $file = $routes[$request];
-
-    // Verifica se o arquivo realmente existe
-    if (file_exists($file)) {
-        include $file;
-    } else {
-        http_response_code(404);
-        echo "Arquivo não encontrado.";
-    }
-} else {
-    http_response_code(404);
-    echo "Página não encontrada.";
-}
-?>
-
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
