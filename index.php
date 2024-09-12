@@ -39,18 +39,16 @@
             font-size: 0.875rem; /* Tamanho da fonte menor para as categorias */
             color: #6c757d; /* Cor do texto das categorias (opcional) */
         }
-        /* Ajuste o padding para evitar que o conteúdo fique muito próximo da borda */
         .container {
             padding-left: 0;
             padding-right: 0;
         }
-        /* Ajusta o layout para garantir que as colunas não fiquem uma em cima da outra */
         .row {
             margin-left: 0;
             margin-right: 0;
         }
         .navbar-light {
-            background-color: #333; /* Cor de fundo escura para a navbar */
+            background-color: #343a40; /* Cor de fundo escura para a navbar */
         }
         .navbar-light .navbar-nav .nav-link {
             color: #ffffff; /* Cor do texto dos itens de menu */
@@ -105,7 +103,7 @@
                         $categoria_nome = htmlspecialchars($categoria['nome']);
                     ?>
                         <li class="list-group-item">
-                            <a href="?categoria=<?php echo htmlspecialchars($categoria['id']); ?>&search=<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>">
+                            <a href="?categoria=<?php echo htmlspecialchars($categoria['id']); ?>">
                                 <?php echo $categoria_nome; ?>
                             </a>
                         </li>
@@ -116,30 +114,32 @@
             <!-- Main Content -->
             <div class="col-md-9">
                 <h2>Produtos</h2>
-                <div class="form-group">
-                    <label for="sortByName">Ordenar por:</label>
-                    <select class="form-control form-control-sm" id="sortByName" name="sort">
-                        <option value="recent" <?php echo isset($_GET['sort']) && $_GET['sort'] == 'recent' ? 'selected' : ''; ?>>Recente</option>
-                        <option value="name" <?php echo isset($_GET['sort']) && $_GET['sort'] == 'name' ? 'selected' : ''; ?>>Nome</option>
-                        <option value="price" <?php echo isset($_GET['sort']) && $_GET['sort'] == 'price' ? 'selected' : ''; ?>>Preço</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="filterCategory">Categoria:</label>
-                    <select class="form-control form-control-sm" id="filterCategory" name="categoria">
-                        <option value="">Todas</option>
-                        <?php
-                        $categorias_result->data_seek(0); // Resetar o ponteiro do resultado para reusar a variável
-                        while ($categoria = $categorias_result->fetch_assoc()): 
-                            $categoria_id = htmlspecialchars($categoria['id']);
-                            $categoria_nome = htmlspecialchars($categoria['nome']);
-                        ?>
-                            <option value="<?php echo $categoria_id; ?>" <?php echo isset($_GET['categoria']) && $_GET['categoria'] == $categoria_id ? 'selected' : ''; ?>>
-                                <?php echo $categoria_nome; ?>
-                            </option>
-                        <?php endwhile; ?>
-                    </select>
-                </div>
+                <form method="GET" id="filtersForm">
+                    <div class="form-group">
+                        <label for="sortByName">Ordenar por:</label>
+                        <select class="form-control form-control-sm" id="sortByName" name="sort">
+                            <option value="recent" <?php echo isset($_GET['sort']) && $_GET['sort'] == 'recent' ? 'selected' : ''; ?>>Recente</option>
+                            <option value="name" <?php echo isset($_GET['sort']) && $_GET['sort'] == 'name' ? 'selected' : ''; ?>>Nome</option>
+                            <option value="price" <?php echo isset($_GET['sort']) && $_GET['sort'] == 'price' ? 'selected' : ''; ?>>Preço</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="filterCategory">Categoria:</label>
+                        <select class="form-control form-control-sm" id="filterCategory" name="categoria">
+                            <option value="">Todas</option>
+                            <?php
+                            $categorias_result->data_seek(0); // Resetar o ponteiro do resultado para reusar a variável
+                            while ($categoria = $categorias_result->fetch_assoc()): 
+                                $categoria_id = htmlspecialchars($categoria['id']);
+                                $categoria_nome = htmlspecialchars($categoria['nome']);
+                            ?>
+                                <option value="<?php echo $categoria_id; ?>" <?php echo isset($_GET['categoria']) && $_GET['categoria'] == $categoria_id ? 'selected' : ''; ?>>
+                                    <?php echo $categoria_nome; ?>
+                                </option>
+                            <?php endwhile; ?>
+                        </select>
+                    </div>
+                </form>
 
                 <div class="row">
                     <?php
@@ -221,8 +221,22 @@
     </div>
 
     <!-- Bootstrap JS, Popper.js, e jQuery -->
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.0.7/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <script>
+        // Submete o formulário automaticamente ao alterar a ordenação ou a categoria
+        document.getElementById('sortByName').addEventListener('change', function() {
+            document.getElementById('filtersForm').submit();
+        });
+
+        document.getElementById('filterCategory').addEventListener('change', function() {
+            // Limpa o campo de pesquisa ao selecionar uma nova categoria
+            var searchInput = document.querySelector('input[name="search"]');
+            searchInput.value = '';
+            document.getElementById('filtersForm').submit();
+        });
+    </script>
 </body>
 </html>
