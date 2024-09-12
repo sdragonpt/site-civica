@@ -30,7 +30,7 @@ header img {
 }
 
 nav {
-    margin: 30px 0;
+    
 }
 
 nav a {
@@ -47,7 +47,6 @@ nav a:hover {
 }
 
 .content {
-    margin-top: 26px;
     background-color: #fff;
     padding: 20px;
     border-radius: 10px;
