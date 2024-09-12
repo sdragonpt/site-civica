@@ -12,7 +12,8 @@
             object-fit: cover;
         }
         .card {
-            width: 300px; /* Ajuste a largura máxima do card conforme necessário */
+            width: 100%; /* Ajusta a largura do card para ocupar o máximo possível */
+            max-width: 300px; /* Ajuste a largura máxima do card conforme necessário */
         }
         .navbar-brand img {
             height: 60px; /* Ajuste o tamanho da imagem conforme necessário */
@@ -30,6 +31,16 @@
         .card-categories {
             font-size: 0.875rem; /* Tamanho da fonte menor para as categorias */
             color: #6c757d; /* Cor do texto das categorias (opcional) */
+        }
+        /* Ajuste o padding para evitar que o conteúdo fique muito próximo da borda */
+        .container {
+            padding-left: 0;
+            padding-right: 0;
+        }
+        /* Ajusta o layout para garantir que as colunas não fiquem uma em cima da outra */
+        .row {
+            margin-left: 0;
+            margin-right: 0;
         }
     </style>
 </head>
