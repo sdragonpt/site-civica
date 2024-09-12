@@ -12,6 +12,7 @@
         }
         .card-img-top {
             width: 100%;
+            height: 150px;
             object-fit: cover;
         }
         .card {
