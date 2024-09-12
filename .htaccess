@@ -1,1 +1,13 @@
 DirectoryIndex index.php index.html
+
+RewriteEngine On
+RewriteBase /
+
+# Redireciona todas as requisições para o index.php, exceto arquivos existentes e diretórios
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php [L,QSA]
+
+# Configuração para redirecionar para admin.php
+RewriteRule ^admin$ admin.php [L,QSA]
+RewriteRule ^login$ login.php [L,QSA]
