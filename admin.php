@@ -11,11 +11,9 @@ include 'config.php'; // Inclui a configuração de conexão com o banco de dado
 
 // Função para redimensionar e compactar a imagem
 function resize_and_compress_image($source_path, $target_path, $max_width = 800, $max_height = 600, $quality = 75) {
-    // Obtém informações sobre a imagem
     list($width, $height, $type) = getimagesize($source_path);
-    
-    // Calcula a nova largura e altura
     $ratio = $width / $height;
+    
     if ($width > $height) {
         $new_width = min($max_width, $width);
         $new_height = $new_width / $ratio;
@@ -24,10 +22,8 @@ function resize_and_compress_image($source_path, $target_path, $max_width = 800,
         $new_width = $new_height * $ratio;
     }
 
-    // Cria uma nova imagem em branco com a nova largura e altura
     $image_p = imagecreatetruecolor($new_width, $new_height);
-
-    // Carrega a imagem original
+    
     switch ($type) {
         case IMAGETYPE_JPEG:
             $image = imagecreatefromjpeg($source_path);
@@ -44,32 +40,27 @@ function resize_and_compress_image($source_path, $target_path, $max_width = 800,
             return false;
     }
 
-    // Redimensiona a imagem
     imagecopyresampled($image_p, $image, 0, 0, 0, 0, $new_width, $new_height, $width, $height);
 
-    // Salva a imagem redimensionada e compactada no caminho de destino
     switch ($type) {
         case IMAGETYPE_JPEG:
             imagejpeg($image_p, $target_path, $quality);
             break;
         case IMAGETYPE_PNG:
-            imagepng($image_p, $target_path, 9); // PNG não usa qualidade, mas o parâmetro define o nível de compressão
+            imagepng($image_p, $target_path, 6); // PNG compression level
             break;
         case IMAGETYPE_GIF:
             imagegif($image_p, $target_path);
             break;
     }
 
-    // Libera a memória
     imagedestroy($image);
     imagedestroy($image_p);
 
     return true;
 }
 
-
-
-// Função para carregar imagens associadas ao produto
+// Funções para carregar imagens e categorias associadas ao produto
 function get_imagens($produto_id) {
     global $conn;
     $stmt = $conn->prepare("SELECT * FROM imagens WHERE produto_id = ?");
@@ -87,7 +78,6 @@ function get_imagem_principal($produto_id) {
     return $result->fetch_assoc();
 }
 
-// Função para carregar categorias associadas ao produto
 function get_categorias($produto_id) {
     global $conn;
     $stmt = $conn->prepare("
@@ -107,98 +97,77 @@ if (isset($_POST['add'])) {
     $descricao = $_POST['descricao'];
     $preco = $_POST['preco'];
 
-    // Função para adicionar produtos
-    if (isset($_POST['add'])) {
-        $nome = $_POST['nome'];
-        $descricao = $_POST['descricao'];
-        $preco = $_POST['preco'];
-    
-        // Insere o produto
-        $stmt = $conn->prepare("INSERT INTO produtos (nome, descricao, preco) VALUES (?, ?, ?)");
-        $stmt->bind_param("ssi", $nome, $descricao, $preco);
-        if ($stmt->execute()) {
-            $produto_id = $stmt->insert_id; // Obtém o ID do produto inserido
-            $stmt->close();
-    
-            // Associa categorias ao produto
-            if (isset($_POST['categorias']) && is_array($_POST['categorias'])) {
-                foreach ($_POST['categorias'] as $categoria_id) {
-                    $stmt = $conn->prepare("INSERT INTO produto_categoria (produto_id, categoria_id) VALUES (?, ?)");
-                    $stmt->bind_param("ii", $produto_id, $categoria_id);
-                    $stmt->execute();
-                    $stmt->close();
-                }
-            }
-    
-            // Manipula o upload de imagens
-            if (isset($_FILES['imagens']) && $_FILES['imagens']['error'][0] == UPLOAD_ERR_OK) {
-                $target_dir = "images/";
-                foreach ($_FILES['imagens']['name'] as $key => $name) {
-                    $target_file = $target_dir . basename($name);
-                    $temp_file = $_FILES['imagens']['tmp_name'][$key];
-                    $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
+    $stmt = $conn->prepare("INSERT INTO produtos (nome, descricao, preco) VALUES (?, ?, ?)");
+    $stmt->bind_param("ssi", $nome, $descricao, $preco);
+    if ($stmt->execute()) {
+        $produto_id = $stmt->insert_id;
+        $stmt->close();
 
+        if (isset($_POST['categorias']) && is_array($_POST['categorias'])) {
+            foreach ($_POST['categorias'] as $categoria_id) {
+                $stmt = $conn->prepare("INSERT INTO produto_categoria (produto_id, categoria_id) VALUES (?, ?)");
+                $stmt->bind_param("ii", $produto_id, $categoria_id);
+                $stmt->execute();
+                $stmt->close();
+            }
+        }
+
+        if (isset($_FILES['imagens']) && $_FILES['imagens']['error'][0] == UPLOAD_ERR_OK) {
+            $target_dir = "images/";
+            foreach ($_FILES['imagens']['name'] as $key => $name) {
+                $target_file = $target_dir . basename($name);
+                $temp_file = $_FILES['imagens']['tmp_name'][$key];
+                $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
+
+                $unique_name = uniqid() . '.' . $imageFileType;
+                $target_file = $target_dir . $unique_name;
+
+                $check = getimagesize($temp_file);
+                if ($check !== false) {
                     $unique_name = uniqid() . '.' . $imageFileType;
                     $target_file = $target_dir . $unique_name;
 
-                    $check = getimagesize($temp_file);
-                    
-                    // Verifica se o arquivo é uma imagem
-                    if ($check !== false) {
-                        // Gera um nome único para a imagem
-                        $unique_name = uniqid() . '.' . $imageFileType;
-                        $target_file = $target_dir . $unique_name;
-                        
-                        // Redimensiona e comprime a imagem
-                        if (resize_and_compress_image($temp_file, $target_file)) {
-                            // Insere a imagem na base de dados
-                            $stmt = $conn->prepare("INSERT INTO imagens (produto_id, imagem) VALUES (?, ?)");
-                            $stmt->bind_param("is", $produto_id, $unique_name);
-                            if (!$stmt->execute()) {
-                                $mensagem = "<div class='alert error'>Erro ao adicionar a imagem: " . htmlspecialchars($stmt->error) . "</div>";
-                            }
-                            $stmt->close();
-                        } else {
-                            $mensagem = "Desculpe, ocorreu um erro ao redimensionar e comprimir a imagem.";
+                    if (resize_and_compress_image($temp_file, $target_file)) {
+                        $stmt = $conn->prepare("INSERT INTO imagens (produto_id, imagem) VALUES (?, ?)");
+                        $stmt->bind_param("is", $produto_id, $unique_name);
+                        if (!$stmt->execute()) {
+                            $mensagem = "<div class='alert alert-danger'>Erro ao adicionar a imagem: " . htmlspecialchars($stmt->error) . "</div>";
                         }
+                        $stmt->close();
                     } else {
-                        $mensagem = "O arquivo não é uma imagem.";
+                        $mensagem = "<div class='alert alert-danger'>Desculpe, ocorreu um erro ao redimensionar e comprimir a imagem.</div>";
                     }
+                } else {
+                    $mensagem = "<div class='alert alert-danger'>O arquivo não é uma imagem.</div>";
                 }
             }
-    
-            if (empty($mensagem)) {
-                $mensagem = "<div class='alert alert-success'>Produto adicionado com sucesso!</div>";
-            }
-        } else {
-            $mensagem = "<div class='alert error'>Erro ao adicionar o produto: " . htmlspecialchars($stmt->error) . "</div>";
         }
+
+        if (empty($mensagem)) {
+            $mensagem = "<div class='alert alert-success'>Produto adicionado com sucesso!</div>";
+        }
+    } else {
+        $mensagem = "<div class='alert alert-danger'>Erro ao adicionar o produto: " . htmlspecialchars($stmt->error) . "</div>";
     }
 }
 
-// Função para buscar todos os produtos
 $stmt = $conn->prepare("SELECT * FROM produtos");
 $stmt->execute();
 $produtos = $stmt->get_result();
 $stmt->close();
 
-// Verifica se há produtos
 $tem_produtos = ($produtos->num_rows > 0);
 
-// Função para carregar categorias existentes
 $categorias_result = $conn->query("SELECT * FROM categorias");
 
-// Função para excluir produtos
 if (isset($_POST['delete'])) {
     $produto_id = $_POST['id'];
 
-    // Remove o produto da tabela produto_categoria
     $stmt = $conn->prepare("DELETE FROM produto_categoria WHERE produto_id = ?");
     $stmt->bind_param("i", $produto_id);
     $stmt->execute();
     $stmt->close();
 
-    // Remove imagens associadas
     $stmt = $conn->prepare("SELECT imagem FROM imagens WHERE produto_id = ?");
     $stmt->bind_param("i", $produto_id);
     $stmt->execute();
@@ -211,7 +180,6 @@ if (isset($_POST['delete'])) {
     }
     $stmt->close();
 
-    // Remove o produto
     $stmt = $conn->prepare("DELETE FROM produtos WHERE id = ?");
     $stmt->bind_param("i", $produto_id);
     $stmt->execute();
@@ -221,13 +189,13 @@ if (isset($_POST['delete'])) {
     exit();
 }
 
-// Logout
 if (isset($_GET['logout'])) {
     session_unset();
     session_destroy();
     header("Location: login.php");
     exit();
 }
+
 ?>
 
 <!DOCTYPE html>
@@ -236,6 +204,7 @@ if (isset($_GET['logout'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Civica</title>
+    <script src="https://cdn.jsdelivr.net/npm/pica@8.1.1/dist/pica.min.js"></script>
     <style>
         h1{
             color: #ffcc00;
@@ -379,7 +348,7 @@ if (isset($_GET['logout'])) {
                 <div><input type="text" name="nome" placeholder="Nome do Produto" required></div>
                 <div><textarea name="descricao" placeholder="Descrição" required></textarea></div>
                 <div><input type="text" name="preco" placeholder="Preço" required></div>
-                <div><input type="file" name="imagens[]" multiple></div>
+                <div><input type="file" name="imagens[]" id="upload" multiple></div>
                 
                 <!-- Seção de seleção de categorias -->
                 <h3>
@@ -461,6 +430,41 @@ if (isset($_GET['logout'])) {
                 }, 5000);
             });
         };
+    </script>
+    <script>
+        document.getElementById('upload').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    const pica = new Pica();
+                    canvas.width = 800; // Defina a largura desejada
+                    canvas.height = img.height * (800 / img.width); // Mantém a proporção
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                    pica.toBlob(canvas, 'image/jpeg', 0.8) // 0.8 = qualidade
+                        .then(function (blob) {
+                            // Crie um FormData para o upload
+                            const formData = new FormData();
+                            formData.append('image', blob, file.name);
+
+                            // Envie o FormData para o servidor
+                            fetch('upload.php', {
+                                method: 'POST',
+                                body: formData
+                            }).then(response => response.text())
+                            .then(result => console.log(result));
+                        });
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
     </script>
 </body>
 </html>
