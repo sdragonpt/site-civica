@@ -256,7 +256,7 @@
                                     <h5 class="card-title"><?php echo $produto_nome; ?></h5>
                                     <p class="card-text"><?php echo $produto_descricao; ?></p>
                                     <p class="card-text"><strong>Preço:</strong> <?php echo $produto_preco; ?>€</p>
-                                    <a href="produto.php?id=<?php echo $produto_id; ?>" class="btn btn-primary">Mais Detalhes</a>
+                                    <a href="produto.php?id=<?php echo htmlspecialchars($produto_id); ?>" class="btn btn-primary">Mais Detalhes</a>
                                 </div>
                             </div>
                         </div>
