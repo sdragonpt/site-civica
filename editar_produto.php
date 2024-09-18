@@ -39,15 +39,6 @@ function get_all_categorias() {
     return $stmt->get_result();
 }
 
-// Função para carregar a imagem de capa associada ao produto
-function get_imagem_capa($produto_id) {
-    global $conn;
-    $stmt = $conn->prepare("SELECT * FROM imagem_capa WHERE produto_id = ?");
-    $stmt->bind_param("i", $produto_id);
-    $stmt->execute();
-    return $stmt->get_result();
-}
-
 // Função para remover uma imagem
 if (isset($_GET['remove_image'])) {
     $imagem_id = $_GET['remove_image'];
@@ -76,33 +67,6 @@ if (isset($_GET['remove_image'])) {
     exit();
 }
 
-// Função para remover a imagem de capa
-if (isset($_GET['remove_capa'])) {
-    $produto_id = $_GET['id']; // Captura o ID do produto
-
-    // Obtém o nome do arquivo da imagem de capa
-    $stmt = $conn->prepare("SELECT imagem_capa FROM imagem_capa WHERE produto_id = ?");
-    $stmt->bind_param("i", $produto_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $imagem_capa = $result->fetch_assoc()['imagem_capa'];
-    $stmt->close();
-
-    // Remove o arquivo da pasta de imagens
-    if (file_exists("images/$imagem_capa")) {
-        unlink("images/$imagem_capa");
-    }
-
-    // Remove a entrada do banco de dados
-    $stmt = $conn->prepare("DELETE FROM imagem_capa WHERE produto_id = ?");
-    $stmt->bind_param("i", $produto_id);
-    $stmt->execute();
-    $stmt->close();
-
-    header("Location: editar_produto.php?id=$produto_id"); // Redireciona de volta para a página de edição do produto
-    exit();
-}
-
 // Função para editar produtos
 if (isset($_POST['edit'])) {
     $id = $_POST['id'];
@@ -116,43 +80,7 @@ if (isset($_POST['edit'])) {
     $stmt->execute();
     $stmt->close();
 
-    // Manipula o upload da imagem de capa
-    if (isset($_FILES['imagem_capa']) && $_FILES['imagem_capa']['error'] == UPLOAD_ERR_OK) {
-        $target_dir = "images/";
-        $imagem_capa_nome = basename($_FILES['imagem_capa']['name']);
-        $target_file = $target_dir . $imagem_capa_nome;
-        $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
-        $check = getimagesize($_FILES["imagem_capa"]["tmp_name"]);
-        
-        // Verifica se o arquivo é uma imagem
-        if ($check !== false) {
-            if (move_uploaded_file($_FILES["imagem_capa"]["tmp_name"], $target_file)) {
-                // Remove a imagem de capa antiga, se houver
-                $stmt = $conn->prepare("SELECT imagem_capa FROM imagem_capa WHERE produto_id = ?");
-                $stmt->bind_param("i", $id);
-                $stmt->execute();
-                $result = $stmt->get_result();
-                $imagem_capa_antiga = $result->fetch_assoc()['imagem_capa'];
-                $stmt->close();
-
-                if ($imagem_capa_antiga && file_exists("images/$imagem_capa_antiga")) {
-                    unlink("images/$imagem_capa_antiga");
-                }
-
-                // Atualiza ou insere a nova imagem de capa
-                $stmt = $conn->prepare("REPLACE INTO imagem_capa (produto_id, imagem_capa) VALUES (?, ?)");
-                $stmt->bind_param("is", $id, $imagem_capa_nome);
-                $stmt->execute();
-                $stmt->close();
-            } else {
-                echo "Desculpe, ocorreu um erro ao fazer upload da imagem de capa.";
-            }
-        } else {
-            echo "O arquivo de capa não é uma imagem.";
-        }
-    }
-
-    // Manipula o upload de imagens adicionais
+    // Manipula o upload de imagens
     if (isset($_FILES['imagens']) && $_FILES['imagens']['error'][0] == UPLOAD_ERR_OK) {
         $target_dir = "images/";
         foreach ($_FILES['imagens']['name'] as $key => $name) {
@@ -208,10 +136,6 @@ $categorias_produto = get_categorias($id);
 
 // Obtém todas as categorias disponíveis
 $categorias_result = get_all_categorias();
-
-// Obtém a imagem de capa do produto
-$imagem_capa_result = get_imagem_capa($id);
-$imagem_capa = $imagem_capa_result->fetch_assoc();
 ?>
 
 <!DOCTYPE html>
@@ -225,63 +149,114 @@ $imagem_capa = $imagem_capa_result->fetch_assoc();
             font-family: Arial, sans-serif;
             background-color: #f4f4f4;
             margin: 0;
-            padding: 0;
+            padding: 20px;
+            margin-left: 20%;
+            margin-right: 20%;
         }
         .admin-container {
-            width: 80%;
-            margin: 0 auto;
-            padding: 20px;
             background-color: #fff;
-            border-radius: 8px;
+            padding: 20px;
+            border-radius: 10px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            position: relative;
         }
-        .back-button, .logout-button {
-            background-color: #ffcc00;
-            border: none;
+        .logout-button, .back-button {
+            position: absolute;
+            top: 20px;
             padding: 10px 20px;
+            background-color: #333;
+            border: none;
+            border-radius: 4px;
             color: #fff;
             cursor: pointer;
-            border-radius: 5px;
         }
         .back-button {
-            margin-right: 10px;
+            right: 120px;
         }
-        .image-container {
-            position: relative;
-            display: inline-block;
-            margin-bottom: 10px;
+        .logout-button {
+            right: 20px;
         }
-        .image-container img {
-            max-width: 200px;
-            height: auto;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        .remove-button {
-            position: absolute;
-            top: 0;
-            right: 0;
-            background: rgba(255, 0, 0, 0.7);
-            color: #fff;
-            padding: 5px;
-            border: none;
-            border-radius: 3px;
-            cursor: pointer;
-            font-size: 12px;
+        .back-button:hover, .logout-button:hover {
+            background-color: #333;
         }
         .form-group {
             margin-bottom: 15px;
         }
-        .form-group input, .form-group textarea, .form-group select {
+        .form-group input, .form-group textarea {
             width: 100%;
-            padding: 10px;
+            padding: 8px;
             margin: 5px 0;
             border: 1px solid #ddd;
             border-radius: 4px;
         }
-        .category-list label {
-            display: block;
-            margin-bottom: 5px;
+        .form-group button {
+            padding: 10px 20px;
+            background-color: #ff6600;
+            border: none;
+            border-radius: 4px;
+            color: #fff;
+            cursor: pointer;
+        }
+        .form-group button:hover {
+            background-color: #333;
+        }
+        .image-container {
+            position: relative;
+            display: inline-block;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        .image-container img {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+        }
+        .remove-button {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: #ff0000;
+            color: #fff;
+            border: none;
+            padding: 5px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 14px;
+            width: 20px;
+            height: 20px;
+            text-align: center;
+            line-height: 20px;
+        }
+        .remove-button:hover {
+            background-color: #cc0000;
+        }
+        .add-button {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 5px 10px;
+            background-color: #00cc00;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .add-button:hover {
+            background-color: #009900;
+        }
+        .info-box {
+            background-color: #e0f7fa; /* Azul suave */
+            border: 1px solid #b2ebf2;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        .category-list {
+            display: flex;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        .category-list input[type="checkbox"] {
+            margin-right: 10px;
         }
     </style>
 </head>
@@ -293,59 +268,48 @@ $imagem_capa = $imagem_capa_result->fetch_assoc();
 
         <!-- Formulário para editar produto -->
         <form method="post" action="" enctype="multipart/form-data">
-            <input type="hidden" name="id" value="<?php echo htmlspecialchars($produto['id']); ?>">
-
             <div class="form-group">
+                <input type="text" name="id" value="<?php echo htmlspecialchars($produto['id']); ?>" readonly>
                 <input type="text" name="nome" value="<?php echo htmlspecialchars($produto['nome']); ?>" placeholder="Nome">
                 <textarea name="descricao" placeholder="Descrição"><?php echo htmlspecialchars($produto['descricao']); ?></textarea>
                 <input type="text" name="preco" value="<?php echo htmlspecialchars($produto['preco']); ?>" placeholder="Preço">
-                
-                <!-- Campo para upload da imagem de capa -->
-                <div class="form-group">
-                    <label>Imagem de Capa:</label>
-                    <?php if ($imagem_capa): ?>
-                        <div class="image-container">
-                            <img src="images/<?php echo htmlspecialchars($imagem_capa['imagem_capa']); ?>" alt="Imagem de Capa">
-                            <a href="editar_produto.php?id=<?php echo htmlspecialchars($produto['id']); ?>&remove_capa=true" class="remove-button">X</a>
-                        </div>
-                    <?php else: ?>
-                        <p>Nenhuma imagem de capa definida.</p>
-                    <?php endif; ?>
-                    <input type="file" name="imagem_capa">
-                </div>
-                
-                <!-- Campo para upload de imagens adicionais -->
-                <div class="form-group">
-                    <label>Imagens Adicionais:</label>
-                    <input type="file" name="imagens[]" multiple>
-                </div>
-                
-                <!-- Seletor de Categorias -->
-                <div class="form-group">
-                    <label>Categorias:</label>
-                    <div class="category-list">
-                        <?php while ($categoria = $categorias_result->fetch_assoc()): ?>
-                            <label>
-                                <input type="checkbox" name="categorias[]" value="<?php echo htmlspecialchars($categoria['id']); ?>"
-                                    <?php echo in_array($categoria['id'], array_column($categorias_produto->fetch_all(MYSQLI_ASSOC), 'id')) ? 'checked' : ''; ?>>
-                                <?php echo htmlspecialchars($categoria['nome']); ?>
-                            </label>
-                        <?php endwhile; ?>
-                    </div>
+                <input type="file" name="imagens[]" multiple>
+            </div>
+
+            <!-- Seletor de Categorias -->
+            <div class="form-group">
+                <label>Categorias:</label>
+                <div class="category-list">
+                    <?php while ($categoria = $categorias_result->fetch_assoc()): ?>
+                        <label style="border: 1px solid; border-radius: 3px; padding: 4px; font-size: 14px; margin-right: 6px">
+                        <div style="width: 13px; margin: 0px; float: left;"><input type="checkbox" name="categorias[]" value="<?php echo htmlspecialchars($categoria['id']); ?>"
+                            <?php if (in_array($categoria['id'], array_column($categorias_produto->fetch_all(MYSQLI_ASSOC), 'id'))): ?>
+                                checked
+                            <?php endif; ?>
+                            ></div>
+                            <div style="float: left; margin-top: 3px; margin-left: 5px;"><?php echo htmlspecialchars($categoria['nome']); ?></div>
+                        </label>
+                    <?php endwhile; ?>
                 </div>
             </div>
+
             <button type="submit" name="edit">Salvar Alterações</button>
         </form>
 
-        <!-- Exibe as imagens adicionais -->
-        <h2>Imagens Adicionais</h2>
-        <div class="image-container">
-            <?php while ($imagem = $imagens->fetch_assoc()): ?>
+        <!-- Exibe as imagens existentes com opção de remoção -->
+        <h2>Imagens Atuais</h2>
+        <div>
+            <?php while ($img = $imagens->fetch_assoc()): ?>
                 <div class="image-container">
-                    <img src="images/<?php echo htmlspecialchars($imagem['imagem']); ?>" alt="Imagem Adicional">
-                    <a href="editar_produto.php?id=<?php echo htmlspecialchars($produto['id']); ?>&remove_image=<?php echo htmlspecialchars($imagem['id']); ?>" class="remove-button">X</a>
+                    <img src="images/<?php echo htmlspecialchars($img['imagem']); ?>" alt="Imagem do produto">
+                    <a style="text-decoration: none;" href="editar_produto.php?id=<?php echo htmlspecialchars($produto['id']); ?>&remove_image=<?php echo htmlspecialchars($img['id']); ?>" class="remove-button">X</a>
                 </div>
             <?php endwhile; ?>
+        </div>
+
+        <!-- Aviso -->
+        <div class="info-box">
+            Info: Depois de apagares uma foto é normal a informação do produto desaparecer não te preocupes! Dá refresh à página!
         </div>
     </div>
 </body>

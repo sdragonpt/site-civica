@@ -203,34 +203,34 @@
 
                 <div class="row">
                     <?php
-                        function get_produtos($search = '', $sort_by = 'recent', $categoria_id = null) {
-                            global $conn;
-                            $order_by = 'p.id DESC';
-                            if ($sort_by === 'name') {
-                                $order_by = 'p.nome ASC';
-                            } elseif ($sort_by === 'price') {
-                                $order_by = 'p.preco ASC';
-                            }
-
-                            // Ajustamos a consulta para buscar as imagens de capa dos produtos
-                            $sql = "SELECT p.id, p.nome, p.descricao, p.preco, ic.imagem_capa 
-                                    FROM produtos p
-                                    LEFT JOIN imagem_capa ic ON p.id = ic.produto_id
-                                    WHERE ic.imagem_capa IS NOT NULL";
-                            
-                            if ($search) {
-                                $search = $conn->real_escape_string($search);
-                                $sql .= " AND p.nome LIKE '%$search%'";
-                            }
-                            
-                            if ($categoria_id) {
-                                $sql .= " AND p.id IN (SELECT produto_id FROM produto_categoria WHERE categoria_id = $categoria_id)";
-                            }
-                            
-                            $sql .= " ORDER BY $order_by
-                                    LIMIT 8"; // Ajuste o limite conforme necessário
-                            return $conn->query($sql);
+                    // Função para obter os produtos com base nos filtros e ordenação
+                    function get_produtos($search = '', $sort_by = 'recent', $categoria_id = null) {
+                        global $conn;
+                        $order_by = 'p.id DESC';
+                        if ($sort_by === 'name') {
+                            $order_by = 'p.nome ASC';
+                        } elseif ($sort_by === 'price') {
+                            $order_by = 'p.preco ASC';
                         }
+
+                        $sql = "SELECT p.id, p.nome, p.descricao, p.preco, i.imagem 
+                                FROM produtos p
+                                LEFT JOIN imagens i ON p.id = i.produto_id
+                                WHERE i.imagem IS NOT NULL";
+                        
+                        if ($search) {
+                            $search = $conn->real_escape_string($search);
+                            $sql .= " AND p.nome LIKE '%$search%'";
+                        }
+                        
+                        if ($categoria_id) {
+                            $sql .= " AND p.id IN (SELECT produto_id FROM produto_categoria WHERE categoria_id = $categoria_id)";
+                        }
+                        
+                        $sql .= " ORDER BY $order_by
+                                LIMIT 8"; // Ajuste o limite conforme necessário
+                        return $conn->query($sql);
+                    }
 
                     // Função para obter as categorias de um produto específico
                     function get_categorias_por_produto($produto_id) {
@@ -264,7 +264,7 @@
                     ?>
                         <div class="col-md-3 mb-4">
                             <div class="card">
-                                <img src="images/<?php echo htmlspecialchars($produto['imagem_capa']); ?>" class="card-img-top" alt="<?php echo htmlspecialchars($produto['nome']); ?>">
+                                <img src="images/<?php echo htmlspecialchars($produto['imagem']); ?>" class="card-img-top" alt="<?php echo htmlspecialchars($produto['nome']); ?>">
                                 <div class="card-body">
                                     <p class="card-categories"><?php echo $categorias_str; ?></p>
                                     <h5 class="card-title"><?php echo htmlspecialchars($produto['nome']); ?></h5>
