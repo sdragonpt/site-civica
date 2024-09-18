@@ -9,7 +9,9 @@ function get_imagem_principal($produto_id) {
     $stmt->bind_param("i", $produto_id);
     $stmt->execute();
     $result = $stmt->get_result();
-    return $result->fetch_assoc();
+    $imagem = $result->fetch_assoc();
+    $stmt->close();
+    return $imagem ? $imagem['imagem'] : 'default.png'; // 'default.png' como fallback se não houver imagem
 }
 
 // Função para buscar todos os produtos
