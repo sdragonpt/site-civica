@@ -9,65 +9,60 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 
 include 'config.php'; // Inclui a configuração de conexão com o banco de dados
 
-function redimensionar_imagem($arquivo, $destino, $largura_maxima, $altura_maxima) {
-    // Obtém informações da imagem
-    list($largura_original, $altura_original, $tipo) = getimagesize($arquivo);
+// Função para redimensionar e compactar a imagem
+function resize_and_compress_image($source_path, $target_path, $max_width = 800, $max_height = 600, $quality = 75) {
+    // Obtém informações sobre a imagem
+    list($width, $height, $type) = getimagesize($source_path);
     
     // Calcula a nova largura e altura
-    $proporcao = $largura_original / $altura_original;
-    if ($largura_maxima / $altura_maxima > $proporcao) {
-        $largura_nova = $altura_maxima * $proporcao;
-        $altura_nova = $altura_maxima;
+    $ratio = $width / $height;
+    if ($width > $height) {
+        $new_width = min($max_width, $width);
+        $new_height = $new_width / $ratio;
     } else {
-        $largura_nova = $largura_maxima;
-        $altura_nova = $largura_maxima / $proporcao;
+        $new_height = min($max_height, $height);
+        $new_width = $new_height * $ratio;
     }
 
-    // Cria uma imagem em branco para a nova imagem redimensionada
-    $imagem_nova = imagecreatetruecolor($largura_nova, $altura_nova);
-
-    // Define o fundo da imagem como transparente para PNG
-    if ($tipo == IMAGETYPE_PNG) {
-        imagealphablending($imagem_nova, false);
-        imagesavealpha($imagem_nova, true);
-        $transparente = imagecolorallocatealpha($imagem_nova, 0, 0, 0, 127);
-        imagefilledrectangle($imagem_nova, 0, 0, $largura_nova, $altura_nova, $transparente);
-    }
+    // Cria uma nova imagem em branco com a nova largura e altura
+    $image_p = imagecreatetruecolor($new_width, $new_height);
 
     // Carrega a imagem original
-    switch ($tipo) {
+    switch ($type) {
         case IMAGETYPE_JPEG:
-            $imagem_original = imagecreatefromjpeg($arquivo);
+            $image = imagecreatefromjpeg($source_path);
             break;
         case IMAGETYPE_PNG:
-            $imagem_original = imagecreatefrompng($arquivo);
+            $image = imagecreatefrompng($source_path);
+            imagealphablending($image_p, false);
+            imagesavealpha($image_p, true);
             break;
         case IMAGETYPE_GIF:
-            $imagem_original = imagecreatefromgif($arquivo);
+            $image = imagecreatefromgif($source_path);
             break;
         default:
             return false;
     }
 
     // Redimensiona a imagem
-    imagecopyresampled($imagem_nova, $imagem_original, 0, 0, 0, 0, $largura_nova, $altura_nova, $largura_original, $altura_original);
+    imagecopyresampled($image_p, $image, 0, 0, 0, 0, $new_width, $new_height, $width, $height);
 
-    // Salva a nova imagem
-    switch ($tipo) {
+    // Salva a imagem redimensionada e compactada no caminho de destino
+    switch ($type) {
         case IMAGETYPE_JPEG:
-            imagejpeg($imagem_nova, $destino, 75); // 75 é a qualidade JPEG
+            imagejpeg($image_p, $target_path, $quality);
             break;
         case IMAGETYPE_PNG:
-            imagepng($imagem_nova, $destino, 6); // 6 é a compressão PNG
+            imagepng($image_p, $target_path, 9); // PNG não usa qualidade, mas o parâmetro define o nível de compressão
             break;
         case IMAGETYPE_GIF:
-            imagegif($imagem_nova, $destino);
+            imagegif($image_p, $target_path);
             break;
     }
 
     // Libera a memória
-    imagedestroy($imagem_original);
-    imagedestroy($imagem_nova);
+    imagedestroy($image);
+    imagedestroy($image_p);
 
     return true;
 }
@@ -112,55 +107,62 @@ if (isset($_POST['add'])) {
     $descricao = $_POST['descricao'];
     $preco = $_POST['preco'];
 
-    // Insere o produto
-    $stmt = $conn->prepare("INSERT INTO produtos (nome, descricao, preco) VALUES (?, ?, ?)");
-    $stmt->bind_param("ssi", $nome, $descricao, $preco);
-    if ($stmt->execute()) {
-        $produto_id = $stmt->insert_id; // Obtém o ID do produto inserido
-        $stmt->close();
+    // Função para adicionar produtos
+    if (isset($_POST['add'])) {
+        $nome = $_POST['nome'];
+        $descricao = $_POST['descricao'];
+        $preco = $_POST['preco'];
 
-        // Associa categorias ao produto
-        if (isset($_POST['categorias']) && is_array($_POST['categorias'])) {
-            foreach ($_POST['categorias'] as $categoria_id) {
-                $stmt = $conn->prepare("INSERT INTO produto_categoria (produto_id, categoria_id) VALUES (?, ?)");
-                $stmt->bind_param("ii", $produto_id, $categoria_id);
-                $stmt->execute();
-                $stmt->close();
+        // Insere o produto
+        $stmt = $conn->prepare("INSERT INTO produtos (nome, descricao, preco) VALUES (?, ?, ?)");
+        $stmt->bind_param("ssi", $nome, $descricao, $preco);
+        if ($stmt->execute()) {
+            $produto_id = $stmt->insert_id; // Obtém o ID do produto inserido
+            $stmt->close();
+
+            // Associa categorias ao produto
+            if (isset($_POST['categorias']) && is_array($_POST['categorias'])) {
+                foreach ($_POST['categorias'] as $categoria_id) {
+                    $stmt = $conn->prepare("INSERT INTO produto_categoria (produto_id, categoria_id) VALUES (?, ?)");
+                    $stmt->bind_param("ii", $produto_id, $categoria_id);
+                    $stmt->execute();
+                    $stmt->close();
+                }
             }
-        }
 
-        // Manipula o upload de imagens
-        if (isset($_FILES['imagens']) && $_FILES['imagens']['error'][0] == UPLOAD_ERR_OK) {
-            $target_dir = "images/";
-            $allowed_types = ['jpg', 'jpeg', 'png', 'gif'];
-            $largura_maxima = 800; // Define a largura máxima
-            $altura_maxima = 800;  // Define a altura máxima
-            foreach ($_FILES['imagens']['name'] as $key => $name) {
-                $target_file = $target_dir . basename($name);
-                $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
-                $check = getimagesize($_FILES["imagens"]["tmp_name"][$key]);
-                
-                // Verifica se o arquivo é uma imagem
-                if ($check !== false) {
-                    // Verifica o tipo de imagem
-                    if (in_array($imageFileType, $allowed_types)) {
-                        $temp_file = $_FILES["imagens"]["tmp_name"][$key];
-                        // Redimensiona a imagem
-                        $destino_redimensionado = $target_dir . "resized_" . basename($name);
-                        if (redimensionar_imagem($temp_file, $destino_redimensionado, $largura_maxima, $altura_maxima)) {
+            // Manipula o upload de imagens
+            if (isset($_FILES['imagens']) && $_FILES['imagens']['error'][0] == UPLOAD_ERR_OK) {
+                $target_dir = "images/";
+                foreach ($_FILES['imagens']['name'] as $key => $name) {
+                    $target_file = $target_dir . basename($name);
+                    $temp_file = $_FILES['imagens']['tmp_name'][$key];
+                    $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
+                    $check = getimagesize($temp_file);
+                    
+                    // Verifica se o arquivo é uma imagem
+                    if ($check !== false) {
+                        // Redimensiona e comprime a imagem
+                        if (resize_and_compress_image($temp_file, $target_file)) {
+                            // Insere a imagem na base de dados
                             $stmt = $conn->prepare("INSERT INTO imagens (produto_id, imagem) VALUES (?, ?)");
-                            $stmt->bind_param("is", $produto_id, basename($destino_redimensionado));
+                            $stmt->bind_param("is", $produto_id, $name);
                             $stmt->execute();
                             $stmt->close();
+                        } else {
+                            echo "Desculpe, ocorreu um erro ao redimensionar e comprimir a imagem.";
                         }
+                    } else {
+                        echo "O arquivo não é uma imagem.";
                     }
                 }
             }
-        }
 
-        $mensagem = "<div class='alert alert-success'>Produto adicionado com sucesso!</div>";
-    } else {
-        $mensagem = "<div class='alert alert-danger'>Erro ao adicionar o produto: " . $stmt->error . "</div>";
+            if ($stmt->execute()) {
+                $mensagem = "<div class='alert alert-success'>Produto adicionado com sucesso!</div>";
+            } else {
+                $mensagem = "<div class='alert alert-danger'>Erro ao adicionar o produto: " . $stmt->error . "</div>";
+            }
+        }
     }
 }
 
@@ -355,11 +357,9 @@ if (isset($_GET['logout'])) {
         <button class="logout-button" onclick="window.location.href='admin.php?logout=true'">Logout</button>
         <h1>Admin - Civica</h1>
 
-        <!-- Exibir mensagem de sucesso ou erro -->
+        <!-- Exibe a mensagem se existir -->
         <?php if ($mensagem): ?>
-            <div id="alert" class="alert <?php echo strpos($mensagem, 'success') !== false ? 'alert-success' : 'alert-danger'; ?>">
-                <?php echo $mensagem; ?>
-            </div>
+            <?php echo $mensagem; ?>
         <?php endif; ?>
 
         <!-- Formulário para adicionar produto -->
@@ -444,12 +444,12 @@ if (isset($_GET['logout'])) {
     <!-- Script para desaparecer a mensagem após 5 segundos -->
     <script>
         window.onload = function() {
-            var alert = document.getElementById('alert');
-            if (alert) {
+            var alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
                 setTimeout(function() {
                     alert.classList.add('fade-out');
                 }, 5000);
-            }
+            });
         };
     </script>
 </body>
