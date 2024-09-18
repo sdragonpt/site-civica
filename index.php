@@ -246,6 +246,10 @@
                         return $stmt->get_result();
                     }
 
+                    // Inclua a função get_imagem_principal do admin.php ou defina-a aqui
+                    while ($produto = $produtos->fetch_assoc()): 
+                        $imagem_principal = get_imagem_principal($produto['id']);
+
                     // Obtém os parâmetros de ordenação, pesquisa e filtro
                     $sort_by = isset($_GET['sort']) ? $_GET['sort'] : 'recent';
                     $categoria_id = isset($_GET['categoria']) ? $_GET['categoria'] : null;
@@ -264,7 +268,7 @@
                     ?>
                         <div class="col-md-3 mb-4">
                             <div class="card">
-                                <img src="images/<?php echo htmlspecialchars($produto['imagem']); ?>" class="card-img-top" alt="<?php echo htmlspecialchars($produto['nome']); ?>">
+                                <img src="images/<?php echo htmlspecialchars($imagem_principal['imagem']); ?>" class="card-img-top" alt="<?php echo htmlspecialchars($produto['nome']); ?>">
                                 <div class="card-body">
                                     <p class="card-categories"><?php echo $categorias_str; ?></p>
                                     <h5 class="card-title"><?php echo htmlspecialchars($produto['nome']); ?></h5>

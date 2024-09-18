@@ -18,6 +18,15 @@ function get_imagens($produto_id) {
     return $stmt->get_result();
 }
 
+function get_imagem_principal($produto_id) {
+    global $conn;
+    $stmt = $conn->prepare("SELECT imagem FROM imagens WHERE produto_id = ? ORDER BY id ASC LIMIT 1");
+    $stmt->bind_param("i", $produto_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    return $result->fetch_assoc();
+}
+
 // Função para carregar categorias associadas ao produto
 function get_categorias($produto_id) {
     global $conn;
