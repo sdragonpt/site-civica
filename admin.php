@@ -137,11 +137,6 @@ if (isset($_POST['add'])) {
                     $target_file = $target_dir . basename($name);
                     $temp_file = $_FILES['imagens']['tmp_name'][$key];
                     $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
-
-                    // Gera um nome único para a imagem
-                    $unique_name = uniqid() . '.' . $imageFileType;
-                    $target_file = $target_dir . $unique_name;
-
                     $check = getimagesize($temp_file);
                     
                     // Verifica se o arquivo é uma imagem
