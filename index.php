@@ -134,7 +134,7 @@
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav mr-auto">
                 <li class="nav-item active">
-                    <a class="nav-link" href="index.php">Início <span class="sr-only">(página atual)</span></a>
+                    <a class="nav-link" href="index.html">Início <span class="sr-only">(página atual)</span></a>
                 </li>
                 <li class="nav-item active">
                     <a class="nav-link" href="#contacto">Contactos <span class="sr-only">(página atual)</span></a>
