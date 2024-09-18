@@ -1,3 +1,24 @@
+<?php
+// Inclua a configuração e a função para obter a imagem principal
+include 'config.php';
+
+// Função para carregar a imagem principal do produto
+function get_imagem_principal($produto_id) {
+    global $conn;
+    $stmt = $conn->prepare("SELECT imagem FROM imagens WHERE produto_id = ? ORDER BY id ASC LIMIT 1");
+    $stmt->bind_param("i", $produto_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    return $result->fetch_assoc();
+}
+
+// Função para buscar todos os produtos
+$stmt = $conn->prepare("SELECT * FROM produtos");
+$stmt->execute();
+$produtos = $stmt->get_result();
+$stmt->close();
+?>
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -266,7 +287,7 @@
                     ?>
                         <div class="col-md-3 mb-4">
                             <div class="card">
-                                <img src="images/<?php echo htmlspecialchars($produto['imagem']); ?>" class="card-img-top" alt="<?php echo htmlspecialchars($produto['nome']); ?>">
+                                <img src="images/<?php echo htmlspecialchars($imagem_principal['imagem']); ?>" class="card-img-top" alt="<?php echo htmlspecialchars($produto['nome']); ?>">
                                 <div class="card-body">
                                     <p class="card-categories"><?php echo $categorias_str; ?></p>
                                     <h5 class="card-title"><?php echo htmlspecialchars($produto['nome']); ?></h5>
