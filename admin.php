@@ -40,7 +40,8 @@ function get_categorias($produto_id) {
     return $stmt->get_result();
 }
 
-// Função para adicionar produtos
+// Mensagem de sucesso ou erro
+$mensagem = '';
 if (isset($_POST['add'])) {
     $nome = $_POST['nome'];
     $descricao = $_POST['descricao'];
@@ -79,17 +80,17 @@ if (isset($_POST['add'])) {
                         $stmt->execute();
                         $stmt->close();
                     } else {
-                        echo "Desculpe, ocorreu um erro ao fazer upload da imagem.";
+                        $mensagem = "<div class='alert alert-danger'>Desculpe, ocorreu um erro ao fazer upload da imagem.</div>";
                     }
                 } else {
-                    echo "O arquivo não é uma imagem.";
+                    $mensagem = "<div class='alert alert-danger'>O arquivo não é uma imagem.</div>";
                 }
             }
         }
 
-        echo "Produto adicionado com sucesso!";
+        $mensagem = "<div class='alert alert-success'>Produto adicionado com sucesso!</div>";
     } else {
-        echo "Erro ao adicionar o produto: " . $stmt->error;
+        $mensagem = "<div class='alert alert-danger'>Erro ao adicionar o produto: " . $stmt->error . "</div>";
     }
 }
 
@@ -254,12 +255,42 @@ if (isset($_GET['logout'])) {
             margin-right: 10px;
         }
 
+        /* Estilos para a mensagem de alerta */
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            position: relative;
+            opacity: 1;
+            transition: opacity 0.5s ease-out;
+        }
+        .alert-success {
+            color: #155724;
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+        .alert-danger {
+            color: #721c24;
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+        .alert.fade-out {
+            opacity: 0;
+        }
     </style>
 </head>
 <body>
     <div class="admin-container">
         <button class="logout-button" onclick="window.location.href='admin.php?logout=true'">Logout</button>
         <h1>Admin - Civica</h1>
+
+        <!-- Exibir mensagem de sucesso ou erro -->
+        <?php if ($mensagem): ?>
+            <div id="alert" class="alert <?php echo strpos($mensagem, 'success') !== false ? 'alert-success' : 'alert-danger'; ?>">
+                <?php echo $mensagem; ?>
+            </div>
+        <?php endif; ?>
 
         <!-- Formulário para adicionar produto -->
         <h2>Adicionar Produto</h2>
@@ -339,5 +370,17 @@ if (isset($_GET['logout'])) {
             <p>Nenhum produto foi encontrado.</p>
         <?php endif; ?>
     </div>
+
+    <!-- Script para desaparecer a mensagem após 5 segundos -->
+    <script>
+        window.onload = function() {
+            var alert = document.getElementById('alert');
+            if (alert) {
+                setTimeout(function() {
+                    alert.classList.add('fade-out');
+                }, 5000);
+            }
+        };
+    </script>
 </body>
 </html>
