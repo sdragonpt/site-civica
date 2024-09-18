@@ -251,7 +251,7 @@
                     ?>
                         <div class="col-md-4 mb-4">
                             <div class="card">
-                                <img src="<?php echo $imagem_url; ?>" class="card-img-top" alt="<?php echo $produto_nome; ?>">
+                                <img src="<?php echo 'images/' . $imagem_url; ?>" class="card-img-top" alt="<?php echo $produto_nome; ?>">
                                 <div class="card-body">
                                     <h5 class="card-title"><?php echo $produto_nome; ?></h5>
                                     <p class="card-text"><?php echo $produto_descricao; ?></p>
