@@ -1,26 +1,3 @@
-<?php
-// Inclua a configuração e a função para obter a imagem principal
-include 'config.php';
-
-// Função para carregar a imagem principal do produto
-function get_imagem_principal($produto_id) {
-    global $conn;
-    $stmt = $conn->prepare("SELECT imagem FROM imagens WHERE produto_id = ? ORDER BY id ASC LIMIT 1");
-    $stmt->bind_param("i", $produto_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $imagem = $result->fetch_assoc();
-    $stmt->close();
-    return $imagem ? $imagem['imagem'] : 'default.png'; // 'default.png' como fallback se não houver imagem
-}
-
-// Função para buscar todos os produtos
-$stmt = $conn->prepare("SELECT * FROM produtos");
-$stmt->execute();
-$produtos = $stmt->get_result();
-$stmt->close();
-?>
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -211,7 +188,8 @@ $stmt->close();
                         <select class="form-control form-control-sm" id="filterCategory" name="categoria">
                             <option value="">Todas</option>
                             <?php
-                            $categorias_result->data_seek(0); // Resetar o ponteiro do resultado para reusar a variável
+                            // Resetar o ponteiro do resultado para reusar a variável
+                            $categorias_result->data_seek(0);
                             while ($categoria = $categorias_result->fetch_assoc()): 
                                 $categoria_id = htmlspecialchars($categoria['id']);
                                 $categoria_nome = htmlspecialchars($categoria['nome']);
@@ -247,59 +225,42 @@ $stmt->close();
                         }
                         
                         if ($categoria_id) {
-                            $sql .= " AND p.id IN (SELECT produto_id FROM produto_categoria WHERE categoria_id = $categoria_id)";
+                            $categoria_id = intval($categoria_id);
+                            $sql .= " AND p.categoria_id = $categoria_id";
                         }
                         
-                        $sql .= " ORDER BY $order_by
-                                LIMIT 8"; // Ajuste o limite conforme necessário
+                        $sql .= " GROUP BY p.id ORDER BY $order_by";
+                        
                         return $conn->query($sql);
                     }
 
-                    // Função para obter as categorias de um produto específico
-                    function get_categorias_por_produto($produto_id) {
-                        global $conn;
-                        $stmt = $conn->prepare("
-                            SELECT c.nome 
-                            FROM categorias c
-                            INNER JOIN produto_categoria pc ON c.id = pc.categoria_id
-                            WHERE pc.produto_id = ?
-                        ");
-                        $stmt->bind_param("i", $produto_id);
-                        $stmt->execute();
-                        return $stmt->get_result();
-                    }
-
-                    
-
-                    // Obtém os parâmetros de ordenação, pesquisa e filtro
+                    // Processar filtros e ordenação
+                    $search = isset($_GET['search']) ? $_GET['search'] : '';
                     $sort_by = isset($_GET['sort']) ? $_GET['sort'] : 'recent';
                     $categoria_id = isset($_GET['categoria']) ? $_GET['categoria'] : null;
-                    $search = isset($_GET['search']) ? $_GET['search'] : '';
 
-                    // Obtém os produtos com base nos filtros e ordenação
                     $produtos = get_produtos($search, $sort_by, $categoria_id);
-                    while ($produto = $produtos->fetch_assoc()): 
-                        $produto_id = $produto['id'];
-                        $categorias_result = get_categorias_por_produto($produto_id);
-                        $categorias = [];
-                        while ($categoria = $categorias_result->fetch_assoc()) {
-                            $categorias[] = htmlspecialchars($categoria['nome']);
-                        }
-                        $categorias_str = implode(', ', $categorias);
+
+                    // Exibir os produtos
+                    while ($produto = $produtos->fetch_assoc()) {
+                        $produto_id = htmlspecialchars($produto['id']);
+                        $produto_nome = htmlspecialchars($produto['nome']);
+                        $produto_descricao = htmlspecialchars($produto['descricao']);
+                        $produto_preco = htmlspecialchars($produto['preco']);
+                        $imagem_url = htmlspecialchars($produto['imagem']);
                     ?>
-                        <div class="col-md-3 mb-4">
+                        <div class="col-md-4 mb-4">
                             <div class="card">
-                                <img src="images/<?php echo htmlspecialchars($imagem_principal['imagem']); ?>" class="card-img-top" alt="<?php echo htmlspecialchars($produto['nome']); ?>">
+                                <img src="<?php echo $imagem_url; ?>" class="card-img-top" alt="<?php echo $produto_nome; ?>">
                                 <div class="card-body">
-                                    <p class="card-categories"><?php echo $categorias_str; ?></p>
-                                    <h5 class="card-title"><?php echo htmlspecialchars($produto['nome']); ?></h5>
-                                    <p class="card-text"><?php echo htmlspecialchars($produto['descricao']); ?></p>
-                                    <p class="card-text"><strong><?php echo htmlspecialchars($produto['preco']); ?> €</strong></p>
-                                    <a href="#" class="btn btn-primary">Botão</a>
+                                    <h5 class="card-title"><?php echo $produto_nome; ?></h5>
+                                    <p class="card-text"><?php echo $produto_descricao; ?></p>
+                                    <p class="card-text"><strong>Preço:</strong> R$ <?php echo $produto_preco; ?></p>
+                                    <a href="produto.php?id=<?php echo $produto_id; ?>" class="btn btn-primary">Mais Detalhes</a>
                                 </div>
                             </div>
                         </div>
-                    <?php endwhile; ?>
+                    <?php } ?>
                 </div>
             </div>
         </div>
