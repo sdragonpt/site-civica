@@ -112,14 +112,14 @@ if (isset($_POST['add'])) {
         $nome = $_POST['nome'];
         $descricao = $_POST['descricao'];
         $preco = $_POST['preco'];
-
+    
         // Insere o produto
         $stmt = $conn->prepare("INSERT INTO produtos (nome, descricao, preco) VALUES (?, ?, ?)");
         $stmt->bind_param("ssi", $nome, $descricao, $preco);
         if ($stmt->execute()) {
             $produto_id = $stmt->insert_id; // Obtém o ID do produto inserido
             $stmt->close();
-
+    
             // Associa categorias ao produto
             if (isset($_POST['categorias']) && is_array($_POST['categorias'])) {
                 foreach ($_POST['categorias'] as $categoria_id) {
@@ -129,7 +129,7 @@ if (isset($_POST['add'])) {
                     $stmt->close();
                 }
             }
-
+    
             // Manipula o upload de imagens
             if (isset($_FILES['imagens']) && $_FILES['imagens']['error'][0] == UPLOAD_ERR_OK) {
                 $target_dir = "images/";
@@ -141,27 +141,33 @@ if (isset($_POST['add'])) {
                     
                     // Verifica se o arquivo é uma imagem
                     if ($check !== false) {
+                        // Gera um nome único para a imagem
+                        $unique_name = uniqid() . '.' . $imageFileType;
+                        $target_file = $target_dir . $unique_name;
+                        
                         // Redimensiona e comprime a imagem
                         if (resize_and_compress_image($temp_file, $target_file)) {
                             // Insere a imagem na base de dados
                             $stmt = $conn->prepare("INSERT INTO imagens (produto_id, imagem) VALUES (?, ?)");
-                            $stmt->bind_param("is", $produto_id, $name);
-                            $stmt->execute();
+                            $stmt->bind_param("is", $produto_id, $unique_name);
+                            if (!$stmt->execute()) {
+                                $mensagem = "<div class='alert error'>Erro ao adicionar a imagem: " . htmlspecialchars($stmt->error) . "</div>";
+                            }
                             $stmt->close();
                         } else {
-                            echo "Desculpe, ocorreu um erro ao redimensionar e comprimir a imagem.";
+                            $mensagem = "Desculpe, ocorreu um erro ao redimensionar e comprimir a imagem.";
                         }
                     } else {
-                        echo "O arquivo não é uma imagem.";
+                        $mensagem = "O arquivo não é uma imagem.";
                     }
                 }
             }
-
-            if ($stmt->execute()) {
+    
+            if (empty($mensagem)) {
                 $mensagem = "<div class='alert alert-success'>Produto adicionado com sucesso!</div>";
-            } else {
-                echo "<div class='alert error'>Erro ao adicionar o produto: " . htmlspecialchars($stmt->error) . "</div>";
             }
+        } else {
+            $mensagem = "<div class='alert error'>Erro ao adicionar o produto: " . htmlspecialchars($stmt->error) . "</div>";
         }
     }
 }
