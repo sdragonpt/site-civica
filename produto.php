@@ -24,6 +24,118 @@ if (isset($_GET['id'])) {
     <!-- Bootstrap CSS -->
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
 </head>
+    <style>
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: #f8f9fa; /* Cor de fundo mais escura */
+        }
+        .container {
+            max-width: 1600px; /* Ajuste o valor conforme necessário */
+        }
+        .card-img-top {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+        .card {
+            width: 100%; /* Ajusta a largura do card para ocupar o máximo possível */
+            max-width: 300px; /* Ajuste a largura máxima do card conforme necessário */
+        }
+        .navbar-brand img {
+            height: 60px; /* Ajuste o tamanho da imagem conforme necessário */
+        }
+        .navbar-nav {
+            flex-direction: row;
+        }
+        .form-control-sm {
+            width: auto;
+            display: inline-block;
+        }
+        .list-group {
+            margin-right: 10px; /* Ajuste a margem conforme necessário */
+        }
+        .card-categories {
+            font-size: 0.875rem; /* Tamanho da fonte menor para as categorias */
+            color: #6c757d; /* Cor do texto das categorias (opcional) */
+        }
+        .container {
+            padding-left: 0;
+            padding-right: 0;
+        }
+        .row {
+            margin-left: 0;
+            margin-right: 0;
+        }
+        .navbar-light .navbar-nav .nav-link {
+            color: #ffffff; /* Cor do texto dos itens de menu */
+        }
+        .form-control-sm, .btn-outline-success {
+            color: #343a40; /* Cor do texto da busca e botão */
+            border-color: #343a40 !important;
+        }
+        .btn-outline-success {
+            border-color: #343a40; /* Cor da borda do botão */
+        }
+        .btn-outline-success:hover {
+            background-color: #343a40; /* Cor de fundo ao passar o mouse */
+            color: #ffffff; /* Cor do texto ao passar o mouse */
+        }
+
+        a.btn.btn-primary {
+            background-color: #343a40;
+            border-color: #343a40 !important;
+        }
+
+        a.btn.btn-primary:hover{
+            background-color: #555;
+            border-color: #555 !important;
+        }
+
+        a.nav-link{
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        a.nav-link:hover{
+            font-weight: bold;
+            color: #555 !important;
+        }
+
+        /* Estilos do Rodapé */
+        .footer-section {
+            display: flex;
+            justify-content: space-between;
+            padding: 20px;
+            background-color: #333;
+            color: #ffffff;
+        }
+        .footer-section h3 {
+            margin-top: 0;
+        }
+        .footer-section p {
+            margin: 0;
+        }
+        .social {
+            text-align: center;
+            padding: 20px;
+            background-color: #212529;
+            color: #ffffff;
+        }
+        .social a {
+            color: #ffcc00;
+            margin: 0 10px;
+        }
+        .social i {
+            margin-right: 6px;
+        }
+
+        li.list-group-item{
+            color: #333 !important;
+        }
+    </style>
 <body>
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light">
