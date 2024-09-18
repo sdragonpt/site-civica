@@ -9,6 +9,62 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 
 include 'config.php'; // Inclui a configuração de conexão com o banco de dados
 
+function redimensionar_imagem($arquivo, $destino, $largura_maxima, $altura_maxima) {
+    // Obtém informações da imagem
+    list($largura_original, $altura_original, $tipo) = getimagesize($arquivo);
+    
+    // Calcula a nova largura e altura
+    $proporcao = $largura_original / $altura_original;
+    if ($largura_maxima / $altura_maxima > $proporcao) {
+        $largura_nova = $altura_maxima * $proporcao;
+        $altura_nova = $altura_maxima;
+    } else {
+        $largura_nova = $largura_maxima;
+        $altura_nova = $largura_maxima / $proporcao;
+    }
+
+    // Cria uma imagem em branco para a nova imagem redimensionada
+    $imagem_nova = imagecreatetruecolor($largura_nova, $altura_nova);
+    
+    // Carrega a imagem original
+    switch ($tipo) {
+        case IMAGETYPE_JPEG:
+            $imagem_original = imagecreatefromjpeg($arquivo);
+            break;
+        case IMAGETYPE_PNG:
+            $imagem_original = imagecreatefrompng($arquivo);
+            break;
+        case IMAGETYPE_GIF:
+            $imagem_original = imagecreatefromgif($arquivo);
+            break;
+        default:
+            return false;
+    }
+
+    // Redimensiona a imagem
+    imagecopyresampled($imagem_nova, $imagem_original, 0, 0, 0, 0, $largura_nova, $altura_nova, $largura_original, $altura_original);
+
+    // Salva a nova imagem
+    switch ($tipo) {
+        case IMAGETYPE_JPEG:
+            imagejpeg($imagem_nova, $destino, 85); // 85 é a qualidade JPEG
+            break;
+        case IMAGETYPE_PNG:
+            imagepng($imagem_nova, $destino);
+            break;
+        case IMAGETYPE_GIF:
+            imagegif($imagem_nova, $destino);
+            break;
+    }
+
+    // Libera a memória
+    imagedestroy($imagem_original);
+    imagedestroy($imagem_nova);
+
+    return true;
+}
+
+
 // Função para carregar imagens associadas ao produto
 function get_imagens($produto_id) {
     global $conn;
@@ -67,6 +123,9 @@ if (isset($_POST['add'])) {
         // Manipula o upload de imagens
         if (isset($_FILES['imagens']) && $_FILES['imagens']['error'][0] == UPLOAD_ERR_OK) {
             $target_dir = "images/";
+            $allowed_types = ['jpg', 'jpeg', 'png'];
+            $largura_maxima = 800; // Define a largura máxima
+            $altura_maxima = 800;  // Define a altura máxima
             foreach ($_FILES['imagens']['name'] as $key => $name) {
                 $target_file = $target_dir . basename($name);
                 $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
@@ -74,16 +133,29 @@ if (isset($_POST['add'])) {
                 
                 // Verifica se o arquivo é uma imagem
                 if ($check !== false) {
-                    if (move_uploaded_file($_FILES["imagens"]["tmp_name"][$key], $target_file)) {
-                        $stmt = $conn->prepare("INSERT INTO imagens (produto_id, imagem) VALUES (?, ?)");
-                        $stmt->bind_param("is", $produto_id, $name);
-                        $stmt->execute();
-                        $stmt->close();
+                    // Verifica o tipo de imagem
+                    if (in_array($imageFileType, $allowed_types)) {
+                        if (move_uploaded_file($_FILES["imagens"]["tmp_name"][$key], $target_file)) {
+                            // Redimensiona a imagem
+                            $destino_redimensionado = $target_dir . "resized_" . basename($name);
+                            if (redimensionar_imagem($target_file, $destino_redimensionado, $largura_maxima, $altura_maxima)) {
+                                // Remove o arquivo original, se o redimensionamento for bem-sucedido
+                                unlink($target_file);
+                                $stmt = $conn->prepare("INSERT INTO imagens (produto_id, imagem) VALUES (?, ?)");
+                                $stmt->bind_param("is", $produto_id, basename($destino_redimensionado));
+                                $stmt->execute();
+                                $stmt->close();
+                            } else {
+                                echo "<div class='alert alert-danger'>Desculpe, ocorreu um erro ao redimensionar a imagem.</div>";
+                            }
+                        } else {
+                            echo "<div class='alert alert-danger'>Desculpe, ocorreu um erro ao fazer upload da imagem.</div>";
+                        }
                     } else {
-                        $mensagem = "<div class='alert alert-danger'>Desculpe, ocorreu um erro ao fazer upload da imagem.</div>";
+                        echo "<div class='alert alert-danger'>Somente arquivos JPG, JPEG e PNG são permitidos.</div>";
                     }
                 } else {
-                    $mensagem = "<div class='alert alert-danger'>O arquivo não é uma imagem.</div>";
+                    echo "<div class='alert alert-danger'>O arquivo não é uma imagem.</div>";
                 }
             }
         }
