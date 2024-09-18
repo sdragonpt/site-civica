@@ -165,7 +165,7 @@ if (isset($_POST['add'])) {
             if ($stmt->execute()) {
                 $mensagem = "<div class='alert alert-success'>Produto adicionado com sucesso!</div>";
             } else {
-                $mensagem = "<div class='alert alert-danger'>Erro ao adicionar o produto: " . $stmt->error . "</div>";
+                echo "<div class='alert error'>Erro ao adicionar o produto: " . htmlspecialchars($stmt->error) . "</div>";
             }
         }
     }
