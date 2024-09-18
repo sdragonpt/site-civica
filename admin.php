@@ -54,6 +54,31 @@ if (isset($_POST['add'])) {
             }
         }
 
+        // Manipula o upload da imagem de capa
+        if (isset($_FILES['imagem_capa']) && $_FILES['imagem_capa']['error'] == UPLOAD_ERR_OK) {
+            $target_dir = "images/";
+            $imagem_capa_nome = basename($_FILES['imagem_capa']['name']);
+            $target_file = $target_dir . $imagem_capa_nome;
+            $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
+            $check = getimagesize($_FILES["imagem_capa"]["tmp_name"]);
+            
+            // Verifica se o arquivo é uma imagem
+            if ($check !== false) {
+                if (move_uploaded_file($_FILES["imagem_capa"]["tmp_name"], $target_file)) {
+                    // Insere a imagem de capa no banco de dados
+                    $stmt = $conn->prepare("INSERT INTO imagem_capa (produto_id, imagem_capa) VALUES (?, ?)");
+                    $stmt->bind_param("is", $produto_id, $imagem_capa_nome);
+                    $stmt->execute();
+                    $stmt->close();
+                } else {
+                    echo "Desculpe, ocorreu um erro ao fazer upload da imagem de capa.";
+                }
+            } else {
+                echo "O arquivo de capa não é uma imagem.";
+            }
+        }
+
+
         // Manipula o upload de imagens
         if (isset($_FILES['imagens']) && $_FILES['imagens']['error'][0] == UPLOAD_ERR_OK) {
             $target_dir = "images/";
