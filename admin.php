@@ -9,6 +9,57 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 
 include 'config.php'; // Inclui a configuração de conexão com o banco de dados
 
+// Função para redimensionar e compactar a imagem
+function resize_and_compress_image($source_path, $target_path, $max_width = 800, $max_height = 600, $quality = 75) {
+    list($width, $height, $type) = getimagesize($source_path);
+    $ratio = $width / $height;
+    
+    if ($width > $height) {
+        $new_width = min($max_width, $width);
+        $new_height = $new_width / $ratio;
+    } else {
+        $new_height = min($max_height, $height);
+        $new_width = $new_height * $ratio;
+    }
+
+    $image_p = imagecreatetruecolor($new_width, $new_height);
+    
+    switch ($type) {
+        case IMAGETYPE_JPEG:
+            $image = imagecreatefromjpeg($source_path);
+            break;
+        case IMAGETYPE_PNG:
+            $image = imagecreatefrompng($source_path);
+            imagealphablending($image_p, false);
+            imagesavealpha($image_p, true);
+            break;
+        case IMAGETYPE_GIF:
+            $image = imagecreatefromgif($source_path);
+            break;
+        default:
+            return false;
+    }
+
+    imagecopyresampled($image_p, $image, 0, 0, 0, 0, $new_width, $new_height, $width, $height);
+
+    switch ($type) {
+        case IMAGETYPE_JPEG:
+            imagejpeg($image_p, $target_path, $quality);
+            break;
+        case IMAGETYPE_PNG:
+            imagepng($image_p, $target_path, 6); // PNG compression level
+            break;
+        case IMAGETYPE_GIF:
+            imagegif($image_p, $target_path);
+            break;
+    }
+
+    imagedestroy($image);
+    imagedestroy($image_p);
+
+    return true;
+}
+
 // Funções para carregar imagens e categorias associadas ao produto
 function get_imagens($produto_id) {
     global $conn;
@@ -39,7 +90,7 @@ function get_categorias($produto_id) {
     return $stmt->get_result();
 }
 
-/// Mensagem de sucesso ou erro
+// Mensagem de sucesso ou erro
 $mensagem = '';
 if (isset($_POST['add'])) {
     $nome = $_POST['nome'];
@@ -64,25 +115,19 @@ if (isset($_POST['add'])) {
         if (isset($_FILES['imagens']) && $_FILES['imagens']['error'][0] == UPLOAD_ERR_OK) {
             $target_dir = "images/";
             foreach ($_FILES['imagens']['name'] as $key => $name) {
-                $imageFileType = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+                $target_file = $target_dir . basename($name);
+                $temp_file = $_FILES['imagens']['tmp_name'][$key];
+                $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
+
                 $unique_name = uniqid() . '.' . $imageFileType;
                 $target_file = $target_dir . $unique_name;
-                $temp_file = $_FILES['imagens']['tmp_name'][$key];
 
                 $check = getimagesize($temp_file);
                 if ($check !== false) {
-                    // Chamar o script Python para redimensionar e comprimir a imagem
-                    $command = "scripts/compress_image.py $temp_file $target_file";
-                    $output = null;
-                    $return_var = null;
-                    exec($command, $output, $return_var);
+                    $unique_name = uniqid() . '.' . $imageFileType;
+                    $target_file = $target_dir . $unique_name;
 
-                    if ($return_var !== 0) {
-                        $mensagem = "<div class='alert alert-danger'>Desculpe, ocorreu um erro com Python.<br>Erro: " . implode("<br>", $output) . "</div>";
-                    }
-
-                    // Verifica se o comando foi executado corretamente
-                    if ($return_var === 0) {
+                    if (resize_and_compress_image($temp_file, $target_file)) {
                         $stmt = $conn->prepare("INSERT INTO imagens (produto_id, imagem) VALUES (?, ?)");
                         $stmt->bind_param("is", $produto_id, $unique_name);
                         if (!$stmt->execute()) {
@@ -90,7 +135,7 @@ if (isset($_POST['add'])) {
                         }
                         $stmt->close();
                     } else {
-                        $mensagem = "<div class='alert alert-danger'>Desculpe, ocorreu um erro ao redimensionar e comprimir a imagem com Python.</div>";
+                        $mensagem = "<div class='alert alert-danger'>Desculpe, ocorreu um erro ao redimensionar e comprimir a imagem.</div>";
                     }
                 } else {
                     $mensagem = "<div class='alert alert-danger'>O arquivo não é uma imagem.</div>";
