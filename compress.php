@@ -8,6 +8,7 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 }
 
 $mensagem = '';
+$compressed_files = []; // Lista para armazenar arquivos comprimidos
 if (isset($_POST['compress'])) {
     $target_dir = "compressed_images/";
     if (!file_exists($target_dir)) {
@@ -15,7 +16,6 @@ if (isset($_POST['compress'])) {
     }
 
     $total = count($_FILES['imagens']['name']);
-    $compressed_files = [];
     $success_count = 0;
 
     for ($i = 0; $i < $total; $i++) {
@@ -130,6 +130,15 @@ function resize_and_compress_image($source_path, $target_path, $max_width = 800,
         <div id="progress">
             <div id="progress-bar"></div>
         </div>
+
+        <?php if (!empty($compressed_files)): ?>
+            <h3>Imagens Comprimidas:</h3>
+            <ul>
+                <?php foreach ($compressed_files as $file): ?>
+                    <li><a href="<?php echo $target_dir . $file; ?>" download><?php echo htmlspecialchars($file); ?></a></li>
+                <?php endforeach; ?>
+            </ul>
+        <?php endif; ?>
 
         <script>
             const form = document.getElementById('compress-form');
