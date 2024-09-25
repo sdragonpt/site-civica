@@ -8,33 +8,33 @@ $categorias_result = $conn->query("SELECT * FROM categorias");
 function get_produtos($search = '', $sort_by = 'recent', $categoria_id = null) {
     global $conn;
     $order_by = 'p.id DESC';
-    
     if ($sort_by === 'name') {
         $order_by = 'p.nome ASC';
     } elseif ($sort_by === 'price') {
         $order_by = 'p.preco ASC';
     }
 
-    // Modificação na consulta SQL para incluir a tabela produto_categoria
-    $sql = "SELECT p.id, p.nome, p.descricao, p.preco, i.imagem 
+    $sql = "SELECT p.id, p.nome, p.descricao, p.preco, i.imagem, 
+                   (SELECT GROUP_CONCAT(c.nome SEPARATOR ', ') 
+                    FROM produto_categoria pc 
+                    JOIN categorias c ON pc.categoria_id = c.id 
+                    WHERE pc.produto_id = p.id) AS categorias 
             FROM produtos p
             LEFT JOIN imagens i ON p.id = i.produto_id
-            LEFT JOIN produto_categoria pc ON p.id = pc.produto_id";
+            WHERE i.imagem IS NOT NULL";
 
-    // Adiciona a condição de busca pelo nome do produto
     if ($search) {
         $search = $conn->real_escape_string($search);
-        $sql .= " WHERE p.nome LIKE '%$search%'";
+        $sql .= " AND p.nome LIKE '%$search%'";
     }
-
-    // Adiciona a condição de filtragem pela categoria
+    
     if ($categoria_id) {
         $categoria_id = intval($categoria_id);
-        $sql .= $search ? " AND pc.categoria_id = $categoria_id" : " WHERE pc.categoria_id = $categoria_id";
+        $sql .= " AND p.categoria_id = $categoria_id";
     }
-
+    
     $sql .= " GROUP BY p.id ORDER BY $order_by";
-
+    
     return $conn->query($sql);
 }
 
@@ -144,13 +144,20 @@ $produtos = get_produtos($search, $sort_by, $categoria_id);
                         $produto_descricao = htmlspecialchars($produto['descricao']);
                         $produto_preco = htmlspecialchars($produto['preco']);
                         $imagem_url = htmlspecialchars($produto['imagem']);
+                        $categorias = htmlspecialchars($produto['categorias']); // Captura as categorias
                     ?>
                     <div class="col-md-4 mb-4">
                         <div class="card">
                             <img src="<?php echo 'images/' . $imagem_url; ?>" class="card-img-top" alt="<?php echo $produto_nome; ?>">
                             <div class="card-body">
+                                <p class="text-muted" style="font-size: 0.85em;"><?php echo $categorias ? $categorias : 'Sem categoria'; ?></p> <!-- Exibe as categorias -->
                                 <h5 class="card-title"><?php echo $produto_nome; ?></h5>
-                                <p class="card-text"><?php echo $produto_descricao; ?></p>
+                                <p class="card-text"><?php
+                                    // Trunca a descrição se ela exceder o tamanho máximo
+                                    if (strlen($produto_descricao) > $max_tamanho) {
+                                        $produto_descricao = substr($produto_descricao, 0, $max_tamanho) . '...';
+                                    }
+                                    echo $produto_descricao; ?></p>
                                 <p class="card-text"><strong>Preço:</strong> <?php echo $produto_preco; ?>€</p>
                                 <a href="produto.php?id=<?php echo htmlspecialchars($produto_id); ?>" class="btn btn-primary">Mais Detalhes</a>
                             </div>
