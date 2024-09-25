@@ -1,3 +1,18 @@
+<?php
+include('config.php'); // Inclua o arquivo de configuração do banco de dados
+// Verifica se o ID do produto foi passado via GET
+if (isset($_GET['id'])) {
+    $produto_id = intval($_GET['id']);
+    
+    // Obtém as informações do produto
+    $produto_result = $conn->query("SELECT * FROM produtos WHERE id = $produto_id");
+    $produto = $produto_result->fetch_assoc();
+    
+    // Obtém as imagens do produto
+    $imagens_result = $conn->query("SELECT imagem FROM imagens WHERE produto_id = $produto_id");
+}
+?>
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -23,7 +38,7 @@
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav mr-auto">
                 <li class="nav-item active">
-                    <a class="nav-link" href="index.php">Início <span class="sr-only">(página atual)</span></a>
+                    <a class="nav-link" href="index.html">Início <span class="sr-only">(página atual)</span></a>
                 </li>
                 <li class="nav-item active">
                     <a class="nav-link" href="#contacto">Contactos <span class="sr-only">(página atual)</span></a>
@@ -44,6 +59,8 @@
                 <h4>Categorias</h4>
                 <ul class="list-group">
                     <?php
+                    include('config.php'); // Inclua o arquivo de configuração do banco de dados
+
                     // Obter todas as categorias
                     $categorias_result = $conn->query("SELECT * FROM categorias");
                     while ($categoria = $categorias_result->fetch_assoc()): 
@@ -101,23 +118,23 @@
                             $order_by = 'p.preco ASC';
                         }
 
-                        $sql = "SELECT p.id, p.nome, p.descricao, p.preco, p.categoria_id, i.imagem 
+                        $sql = "SELECT p.id, p.nome, p.descricao, p.preco, i.imagem 
                                 FROM produtos p
                                 LEFT JOIN imagens i ON p.id = i.produto_id
                                 WHERE i.imagem IS NOT NULL";
-
+                        
                         if ($search) {
                             $search = $conn->real_escape_string($search);
                             $sql .= " AND p.nome LIKE '%$search%'";
                         }
-
+                        
                         if ($categoria_id) {
                             $categoria_id = intval($categoria_id);
                             $sql .= " AND p.categoria_id = $categoria_id";
                         }
-
+                        
                         $sql .= " GROUP BY p.id ORDER BY $order_by";
-
+                        
                         return $conn->query($sql);
                     }
 
@@ -128,15 +145,18 @@
 
                     $produtos = get_produtos($search, $sort_by, $categoria_id);
 
-                    // Verificar se há produtos
-                    if ($produtos && $produtos->num_rows > 0) {
-                        // Exibir os produtos
-                        while ($produto = $produtos->fetch_assoc()) {
-                            $produto_id = htmlspecialchars($produto['id']);
-                            $produto_nome = htmlspecialchars($produto['nome']);
-                            $produto_descricao = htmlspecialchars($produto['descricao']);
-                            $produto_preco = htmlspecialchars($produto['preco']);
-                            $imagem_url = htmlspecialchars($produto['imagem']);
+                    // Exibir os produtos
+                    while ($produto = $produtos->fetch_assoc()) {
+                        // Cheque se o produto pertence à categoria
+                        if ($categoria_id && $produto['categoria_id'] != $categoria_id) {
+                            continue; // Pula para o próximo produto se não pertencer à categoria
+                        }
+                        
+                        $produto_id = htmlspecialchars($produto['id']);
+                        $produto_nome = htmlspecialchars($produto['nome']);
+                        $produto_descricao = htmlspecialchars($produto['descricao']);
+                        $produto_preco = htmlspecialchars($produto['preco']);
+                        $imagem_url = htmlspecialchars($produto['imagem']);
                     ?>
                     <div class="col-md-4 mb-4">
                         <div class="card">
@@ -150,10 +170,7 @@
                         </div>
                     </div>
                     <?php 
-                        }
-                    } else {
-                        echo '<div class="col-md-12">Nenhum produto encontrado.</div>';
-                    }
+                    } 
                     ?>
                 </div>
             </div>
@@ -163,30 +180,71 @@
     <!-- Rodapé -->
     <div class="fim" style="background-color: #333; margin-top: 8vw">
         <footer id="contacto" style="background-color: #333; color: #ffffff;">
-            <div class="container" style="max-width: 1300px; padding: 10px 20px;">
-                <div class="row">
-                    <div class="col-md-4 mb-4">
-                        <h5>Sobre Nós</h5>
-                        <p>Bem-vindo à Civica, onde oferecemos a melhor maquinaria e equipamentos para construção civil e obras públicas.</p>
+            <div class="container" style="max-width: 1300px; padding: 20px 0;">
+                <div class="footer-section row">
+                    <div class="contact-info col-md-4">
+                        <h3>Contacto</h3>
+                        <p>Tel/Fax: +351 259 351 024</p>
+                        <p>Móvel: +351 967 571 033</p>
+                        <p>WhatsApp: +351 967 571 033</p>
+                        <p>Email: <a href="mailto:civica@civica.pt" style="color: #ffcc00;">civica@civica.pt</a></p>
                     </div>
-                    <div class="col-md-4 mb-4">
-                        <h5>Contacte-nos</h5>
-                        <p>Email: info@civica.com</p>
-                        <p>Telefone: +351 912 345 678</p>
+
+                    <div class="location col-md-4">
+                        <h3>Localização</h3>
+                        <p>Zona Industrial de Constantim, Lote 143 e 144</p>
+                        <p>5000-082 Vila Real, Portugal</p>
+                        <p>GPS: Lat. 41°16'43'' N - Long. 7°42'22'' W</p>
                     </div>
-                    <div class="col-md-4 mb-4">
-                        <h5>Siga-nos</h5>
-                        <p><a href="#" style="color: #ffffff;">Facebook</a></p>
-                        <p><a href="#" style="color: #ffffff;">Instagram</a></p>
+
+                    <div class="about col-md-4">
+                        <h3>Sobre Nós</h3>
+                        <p>Cívica - Construções, Engenharia e Equipamentos, Lda</p>
+                        <p>Sociedade por Quotas</p>
+                        <p>Capital Social 100.000,00€</p>
+                        <p>NIF/EORI: PT 504 117 246</p>
+                        <p>Alvará: nº 43194</p>
                     </div>
                 </div>
+            </div>
+
+            <!-- Seção Social -->
+            <div class="social" style="background-color: #222; color: #ffffff; padding: 20px 0; text-align: center;">
+                <a href="#" style="color: #ffcc00; margin-right: 6px;"><i class="fa-brands fa-facebook"></i> Facebook</a>
+                <a href="#" style="color: #ffcc00; margin-right: 6px;"><i class="fa-brands fa-instagram"></i> Instagram</a>
+                <p class="mt-2">&copy; 2024 Civica - Todos os direitos reservados</p>
             </div>
         </footer>
     </div>
 
-    <!-- Scripts do Bootstrap -->
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+
+    <!-- Bootstrap JS, Popper.js, e jQuery -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.0.7/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <script>
+        // Função para remover a âncora da URL
+        function removeHash() {
+            // Atualiza a URL removendo o fragmento (âmbora) sem recarregar a página
+            history.replaceState(null, null, location.pathname + location.search);
+        }
+
+        // Submete o formulário automaticamente ao alterar a ordenação ou a categoria
+        document.getElementById('sortByName').addEventListener('change', function() {
+            removeHash(); // Remove a âncora da URL
+            document.getElementById('filtersForm').submit();
+        });
+
+        document.getElementById('filterCategory').addEventListener('change', function() {
+            // Limpa o campo de pesquisa ao selecionar uma nova categoria
+            var searchInput = document.querySelector('input[name="search"]');
+            searchInput.value = '';
+            removeHash(); // Remove a âncora da URL
+            document.getElementById('filtersForm').submit();
+        });
+    </script>
+
+
 </body>
 </html>
