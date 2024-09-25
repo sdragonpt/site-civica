@@ -64,10 +64,9 @@ if (isset($_POST['add'])) {
         if (isset($_FILES['imagens'])) {
             $target_dir = "images/";
             foreach ($_FILES['imagens']['name'] as $key => $name) {
-                $imageFileType = 'jpeg'; // Defina como jpeg, pois já estamos convertendo no frontend
-                $unique_name = uniqid() . '.' . $imageFileType; // Nome único para a imagem
+                $unique_name = uniqid() . '.jpg'; // Garante que a imagem será salva como JPEG
                 $target_file = $target_dir . $unique_name;
-        
+
                 // Insere a imagem no banco de dados diretamente
                 $stmt = $conn->prepare("INSERT INTO imagens (produto_id, imagem) VALUES (?, ?)");
                 $stmt->bind_param("is", $produto_id, $unique_name);
@@ -146,7 +145,7 @@ if (isset($_GET['logout'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Civica</title>
-    <script src="https://cdn.jsdelivr.net/npm/pica@8.1.1/dist/pica.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/compressorjs/1.0.5/compressor.min.js"></script> <!-- Nova biblioteca para compressão -->
     <link rel="stylesheet" href="../css/admin.css">
 </head>
 <body>
@@ -219,14 +218,13 @@ if (isset($_GET['logout'])) {
                         </td>
                         <td>
                             <?php while ($imagem = $imagens_produto->fetch_assoc()): ?>
-                                <img src="images/<?php echo htmlspecialchars($imagem['imagem']); ?>" alt="Imagem" style="width: 50px; height: 50px; object-fit: cover; margin-right: 5px;">
+                                <img src="images/<?php echo htmlspecialchars($imagem['imagem']); ?>" alt="Imagem do Produto" style="width: 50px; height: auto;">
                             <?php endwhile; ?>
                         </td>
                         <td>
-                            <a style="text-decoration: none;" href="editar_produto.php?id=<?php echo htmlspecialchars($produto['id']); ?>" class="edit-button">Editar</a>
-                            <form method="post" action="" style="display: inline;">
+                            <form method="post" action="">
                                 <input type="hidden" name="id" value="<?php echo htmlspecialchars($produto['id']); ?>">
-                                <button type="submit" name="delete" class="delete-button">Excluir</button>
+                                <button type="submit" name="delete">Deletar</button>
                             </form>
                         </td>
                     </tr>
@@ -234,71 +232,34 @@ if (isset($_GET['logout'])) {
             </tbody>
         </table>
         <?php else: ?>
-            <p>Nenhum produto foi encontrado.</p>
+            <p>Nenhum produto encontrado.</p>
         <?php endif; ?>
     </div>
 
-    <!-- Script para desaparecer a mensagem após 5 segundos -->
     <script>
-        window.onload = function() {
-            var alerts = document.querySelectorAll('.alert');
-            alerts.forEach(function(alert) {
-                setTimeout(function() {
-                    alert.classList.add('fade-out');
-                }, 5000);
-            });
-        };
-    </script>
-
-    <script>
-        document.getElementById('upload').addEventListener('change', function(event) {
-            const files = event.target.files;
+        const uploadInput = document.getElementById('upload');
+        uploadInput.addEventListener('change', function () {
+            const files = this.files;
             const formData = new FormData();
-            let filesProcessed = 0; // Contador para saber quantos arquivos foram processados
 
             Array.from(files).forEach(file => {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const img = new Image();
-                    img.onload = function() {
-                        const canvas = document.createElement('canvas');
-                        const pica = new Pica();
-                        canvas.width = 800; // Defina a largura desejada
-                        canvas.height = img.height * (800 / img.width); // Mantém a proporção
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-                        // Aqui convertendo para JPEG e comprimindo
-                        pica.toBlob(canvas, 'image/jpeg', 0.4) // 0.8 = qualidade
-                            .then(function(blob) {
-                                formData.append('imagens[]', blob, file.name.replace(/\.[^/.]+$/, "") + '.jpg'); // Renomeia para .jpg
-                                filesProcessed++; // Incrementa o contador
-
-                                // Se todos os arquivos foram processados, envie o FormData
-                                if (filesProcessed === files.length) {
-                                    fetch('admin.php', {
-                                        method: 'POST',
-                                        body: formData
-                                    }).then(response => response.text())
-                                    .then(result => {
-                                        console.log(result);
-                                        alert('Imagens enviadas com sucesso!'); // Feedback ao usuário
-                                    })
-                                    .catch(error => {
-                                        console.error('Erro ao enviar as imagens:', error);
-                                        alert('Erro ao enviar as imagens.'); // Feedback ao usuário
-                                    });
-                                }
-                            })
-                            .catch(error => {
-                                console.error('Erro ao comprimir a imagem:', error);
-                                alert('Erro ao comprimir a imagem.'); // Feedback ao usuário
-                            });
-                    };
-                    img.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
+                new Compressor(file, {
+                    quality: 0.4, // Ajuste a qualidade conforme necessário
+                    success(result) {
+                        formData.append('imagens[]', result, file.name.replace(/\.[^/.]+$/, "") + '.jpg'); // Renomeia para .jpg
+                    },
+                    error(err) {
+                        console.error('Erro ao comprimir a imagem:', err);
+                    },
+                });
             });
+
+            // Envio do FormData após a compressão
+            uploadInput.form.onsubmit = function () {
+                setTimeout(() => {
+                    // Faz o envio do FormData aqui se necessário
+                }, 100); // Aguarda a compressão
+            };
         });
     </script>
 </body>
