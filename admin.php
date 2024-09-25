@@ -3,7 +3,7 @@ session_start();
 
 // Verifica se o usuário está autenticado
 if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
-    header("Location: login.php");
+    header("Location: login.php"); // Redireciona para login.php se não estiver autenticado
     exit();
 }
 
@@ -18,6 +18,15 @@ function get_imagens($produto_id) {
     return $stmt->get_result();
 }
 
+function get_imagem_principal($produto_id) {
+    global $conn;
+    $stmt = $conn->prepare("SELECT imagem FROM imagens WHERE produto_id = ? ORDER BY id ASC LIMIT 1");
+    $stmt->bind_param("i", $produto_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    return $result->fetch_assoc();
+}
+
 function get_categorias($produto_id) {
     global $conn;
     $stmt = $conn->prepare("
@@ -28,26 +37,6 @@ function get_categorias($produto_id) {
     $stmt->bind_param("i", $produto_id);
     $stmt->execute();
     return $stmt->get_result();
-}
-
-function resize_and_compress_image($source_file, $target_file, $quality = 75) {
-    $info = getimagesize($source_file);
-
-    if ($info['mime'] == 'image/jpeg') {
-        $image = imagecreatefromjpeg($source_file);
-    } elseif ($info['mime'] == 'image/gif') {
-        $image = imagecreatefromgif($source_file);
-    } elseif ($info['mime'] == 'image/png') {
-        $image = imagecreatefrompng($source_file);
-    } else {
-        return false;
-    }
-
-    // Salva a imagem redimensionada com compressão
-    imagejpeg($image, $target_file, $quality);
-    imagedestroy($image);
-    
-    return true;
 }
 
 // Mensagem de sucesso ou erro
@@ -84,6 +73,9 @@ if (isset($_POST['add'])) {
 
                 $check = getimagesize($temp_file);
                 if ($check !== false) {
+                    $unique_name = uniqid() . '.' . $imageFileType;
+                    $target_file = $target_dir . $unique_name;
+
                     if (resize_and_compress_image($temp_file, $target_file)) {
                         $stmt = $conn->prepare("INSERT INTO imagens (produto_id, imagem) VALUES (?, ?)");
                         $stmt->bind_param("is", $produto_id, $unique_name);
@@ -95,7 +87,7 @@ if (isset($_POST['add'])) {
                         $mensagem = "<div class='alert alert-danger'>Desculpe, ocorreu um erro ao redimensionar e comprimir a imagem.</div>";
                     }
                 } else {
-                    $mensagem = "<div class='alert alert-danger'>O arquivo não é uma imagem válida.</div>";
+                    $mensagem = "<div class='alert alert-danger'>O arquivo não é uma imagem.</div>";
                 }
             }
         }
@@ -116,6 +108,42 @@ $stmt->close();
 $tem_produtos = ($produtos->num_rows > 0);
 
 $categorias_result = $conn->query("SELECT * FROM categorias");
+
+if (isset($_POST['delete'])) {
+    $produto_id = $_POST['id'];
+
+    $stmt = $conn->prepare("DELETE FROM produto_categoria WHERE produto_id = ?");
+    $stmt->bind_param("i", $produto_id);
+    $stmt->execute();
+    $stmt->close();
+
+    $stmt = $conn->prepare("SELECT imagem FROM imagens WHERE produto_id = ?");
+    $stmt->bind_param("i", $produto_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    while ($img = $result->fetch_assoc()) {
+        $imagem = $img['imagem'];
+        if (file_exists("images/$imagem")) {
+            unlink("images/$imagem");
+        }
+    }
+    $stmt->close();
+
+    $stmt = $conn->prepare("DELETE FROM produtos WHERE id = ?");
+    $stmt->bind_param("i", $produto_id);
+    $stmt->execute();
+    $stmt->close();
+
+    header("Location: admin.php");
+    exit();
+}
+
+if (isset($_GET['logout'])) {
+    session_unset();
+    session_destroy();
+    header("Location: login.php");
+    exit();
+}
 
 ?>
 
