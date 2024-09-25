@@ -124,9 +124,6 @@ if (isset($_POST['add'])) {
 
                 $check = getimagesize($temp_file);
                 if ($check !== false) {
-                    $unique_name = uniqid() . '.' . $imageFileType;
-                    $target_file = $target_dir . $unique_name;
-
                     if (resize_and_compress_image($temp_file, $target_file)) {
                         $stmt = $conn->prepare("INSERT INTO imagens (produto_id, imagem) VALUES (?, ?)");
                         $stmt->bind_param("is", $produto_id, $unique_name);
@@ -196,6 +193,19 @@ if (isset($_GET['logout'])) {
     exit();
 }
 
+// Compressão de imagem
+if (isset($_POST['compress'])) {
+    $temp_file = $_FILES['imagem']['tmp_name'];
+    $imageFileType = strtolower(pathinfo($_FILES['imagem']['name'], PATHINFO_EXTENSION));
+    $target_dir = "images/compressed/";
+    $target_file = $target_dir . uniqid() . '.' . $imageFileType;
+
+    if (resize_and_compress_image($temp_file, $target_file, 800, 600)) {
+        $mensagem = "<div class='alert alert-success'>Imagem comprimida e salva com sucesso em: $target_file</div>";
+    } else {
+        $mensagem = "<div class='alert alert-danger'>Erro ao comprimir a imagem.</div>";
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -216,95 +226,109 @@ if (isset($_GET['logout'])) {
             <?php echo $mensagem; ?>
         <?php endif; ?>
 
-        <!-- Formulário para adicionar produto -->
+        <!-- Formulário para compressor de imagens -->
+        <h2>Compressor de Imagens</h2>
+        <form id="compressorForm" method="post" action="" enctype="multipart/form-data">
+            <div class="form-group">
+                <input type="file" name="imagem" id="imagem" required>
+                <button type="submit" name="compress" id="compressButton">Comprimir Imagem</button>
+            </div>
+            <div id="progressContainer" style="display: none;">
+                <progress id="progressBar" value="0" max="100"></progress>
+                <span id="progressText"></span>
+            </div>
+        </form>
+
+        <script>
+        document.getElementById('compressorForm').onsubmit = function(event) {
+            event.preventDefault(); // Impede o envio padrão do formulário
+            const formData = new FormData(this);
+            const progressBar = document.getElementById('progressBar');
+            const progressContainer = document.getElementById('progressContainer');
+            const progressText = document.getElementById('progressText');
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', this.action, true);
+            
+            xhr.upload.onprogress = function(e) {
+                if (e.lengthComputable) {
+                    const percentComplete = (e.loaded / e.total) * 100;
+                    progressBar.value = percentComplete;
+                    progressText.textContent = Math.round(percentComplete) + '%';
+                }
+            };
+
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    progressText.textContent = 'Imagem comprimida com sucesso!';
+                } else {
+                    progressText.textContent = 'Erro ao comprimir a imagem.';
+                }
+                progressContainer.style.display = 'none'; // Esconde a barra após a conclusão
+            };
+
+            progressContainer.style.display = 'block'; // Mostra a barra de progresso
+            xhr.send(formData);
+        };
+        </script>
+
         <h2>Adicionar Produto</h2>
         <form method="post" action="" enctype="multipart/form-data">
             <div class="form-group">
-                <div><input type="text" name="nome" placeholder="Nome do Produto" required></div>
-                <div><textarea name="descricao" placeholder="Descrição" required></textarea></div>
-                <div><input type="text" name="preco" placeholder="Preço" required></div>
-                <div><input type="file" name="imagens[]" id="upload" multiple></div>
-                
-                <!-- Seção de seleção de categorias -->
-                <h3>
-                    Selecionar Categorias
-                    <a href="gerenciar_categorias.php" style="margin-left: 10px; text-decoration: none; color: #007bff; font-size: 14px;">Gerenciar Categorias</a>
-                </h3>
-                <div class="category-list">
+                <label for="nome">Nome:</label>
+                <input type="text" name="nome" id="nome" required>
+            </div>
+            <div class="form-group">
+                <label for="descricao">Descrição:</label>
+                <textarea name="descricao" id="descricao" required></textarea>
+            </div>
+            <div class="form-group">
+                <label for="preco">Preço:</label>
+                <input type="number" name="preco" id="preco" required>
+            </div>
+            <div class="form-group">
+                <label for="categorias">Categorias:</label>
+                <select name="categorias[]" id="categorias" multiple>
                     <?php while ($categoria = $categorias_result->fetch_assoc()): ?>
-                        <label style="border: 1px solid; border-radius: 3px; padding: 4px; font-size: 14px; margin-right: 6px">
-                            <div style="width: 13px; margin: 0px; float: left;"><input type="checkbox" name="categorias[]" value="<?php echo $categoria['id']; ?>"></div>
-                            <div style="float: left; margin-top: 3px; margin-left: 5px;"><?php echo htmlspecialchars($categoria['nome']); ?></div>
-                        </label>
+                        <option value="<?php echo $categoria['id']; ?>"><?php echo $categoria['nome']; ?></option>
                     <?php endwhile; ?>
-                </div>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="imagens">Imagens:</label>
+                <input type="file" name="imagens[]" id="imagens" multiple>
             </div>
             <button type="submit" name="add">Adicionar Produto</button>
         </form>
 
-        <!-- Verifica se há produtos -->
+        <h2>Gerenciar Produtos</h2>
         <?php if ($tem_produtos): ?>
-        <!-- Lista de produtos -->
-        <h2>Produtos</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Nome</th>
-                    <th>Descrição</th>
-                    <th>Preço</th>
-                    <th>Categorias</th>
-                    <th>Imagens</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php while ($produto = $produtos->fetch_assoc()): ?>
-                    <?php
-                    $categorias_produto = get_categorias($produto['id']);
-                    $imagens_produto = get_imagens($produto['id']);
-                    ?>
+            <table>
+                <thead>
                     <tr>
-                        <td><?php echo htmlspecialchars($produto['id']); ?></td>
-                        <td><?php echo htmlspecialchars($produto['nome']); ?></td>
-                        <td><?php echo htmlspecialchars($produto['descricao']); ?></td>
-                        <td><?php echo htmlspecialchars($produto['preco']); ?></td>
-                        <td>
-                            <?php while ($categoria = $categorias_produto->fetch_assoc()): ?>
-                                <?php echo htmlspecialchars($categoria['nome']) . '<br>'; ?>
-                            <?php endwhile; ?>
-                        </td>
-                        <td>
-                            <?php while ($imagem = $imagens_produto->fetch_assoc()): ?>
-                                <img src="images/<?php echo htmlspecialchars($imagem['imagem']); ?>" alt="Imagem" style="width: 50px; height: 50px; object-fit: cover; margin-right: 5px;">
-                            <?php endwhile; ?>
-                        </td>
-                        <td>
-                            <a style="text-decoration: none;" href="editar_produto.php?id=<?php echo htmlspecialchars($produto['id']); ?>" class="edit-button">Editar</a>
-                            <form method="post" action="" style="display: inline;">
-                                <input type="hidden" name="id" value="<?php echo htmlspecialchars($produto['id']); ?>">
-                                <button type="submit" name="delete" class="delete-button">Excluir</button>
-                            </form>
-                        </td>
+                        <th>ID</th>
+                        <th>Nome</th>
+                        <th>Ações</th>
                     </tr>
-                <?php endwhile; ?>
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    <?php while ($produto = $produtos->fetch_assoc()): ?>
+                        <tr>
+                            <td><?php echo $produto['id']; ?></td>
+                            <td><?php echo $produto['nome']; ?></td>
+                            <td>
+                                <form method="post" action="">
+                                    <input type="hidden" name="id" value="<?php echo $produto['id']; ?>">
+                                    <button type="submit" name="delete">Excluir</button>
+                                </form>
+                            </td>
+                        </tr>
+                    <?php endwhile; ?>
+                </tbody>
+            </table>
         <?php else: ?>
-            <p>Nenhum produto foi encontrado.</p>
+            <p>Nenhum produto encontrado.</p>
         <?php endif; ?>
     </div>
-
-    <!-- Script para desaparecer a mensagem após 5 segundos -->
-    <script>
-        window.onload = function() {
-            var alerts = document.querySelectorAll('.alert');
-            alerts.forEach(function(alert) {
-                setTimeout(function() {
-                    alert.classList.add('fade-out');
-                }, 5000);
-            });
-        };
-    </script>
 </body>
 </html>
