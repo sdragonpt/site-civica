@@ -204,6 +204,7 @@ if (isset($_GET['logout'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Civica</title>
+    <script src="https://cdn.jsdelivr.net/npm/pica@8.1.1/dist/pica.min.js"></script>
     <link rel="stylesheet" href="./css/admin.css">
 </head>
 <body>
@@ -224,13 +225,17 @@ if (isset($_GET['logout'])) {
                 <div><textarea name="descricao" placeholder="Descrição" required></textarea></div>
                 <div><input type="text" name="preco" placeholder="Preço" required></div>
                 <div><input type="file" name="imagens[]" id="upload" multiple></div>
+                
                 <!-- Seção de seleção de categorias -->
-                <h3>Selecionar Categorias</h3>
+                <h3>
+                    Selecionar Categorias
+                    <a href="gerenciar_categorias.php" style="margin-left: 10px; text-decoration: none; color: #007bff; font-size: 14px;">Gerenciar Categorias</a>
+                </h3>
                 <div class="category-list">
                     <?php while ($categoria = $categorias_result->fetch_assoc()): ?>
-                        <label>
-                            <input type="checkbox" name="categorias[]" value="<?php echo $categoria['id']; ?>">
-                            <?php echo htmlspecialchars($categoria['nome']); ?>
+                        <label style="border: 1px solid; border-radius: 3px; padding: 4px; font-size: 14px; margin-right: 6px">
+                            <div style="width: 13px; margin: 0px; float: left;"><input type="checkbox" name="categorias[]" value="<?php echo $categoria['id']; ?>"></div>
+                            <div style="float: left; margin-top: 3px; margin-left: 5px;"><?php echo htmlspecialchars($categoria['nome']); ?></div>
                         </label>
                     <?php endwhile; ?>
                 </div>
@@ -240,6 +245,7 @@ if (isset($_GET['logout'])) {
 
         <!-- Verifica se há produtos -->
         <?php if ($tem_produtos): ?>
+        <!-- Lista de produtos -->
         <h2>Produtos</h2>
         <table>
             <thead>
@@ -275,7 +281,7 @@ if (isset($_GET['logout'])) {
                             <?php endwhile; ?>
                         </td>
                         <td>
-                            <a href="editar_produto.php?id=<?php echo htmlspecialchars($produto['id']); ?>" class="edit-button">Editar</a>
+                            <a style="text-decoration: none;" href="editar_produto.php?id=<?php echo htmlspecialchars($produto['id']); ?>" class="edit-button">Editar</a>
                             <form method="post" action="" style="display: inline;">
                                 <input type="hidden" name="id" value="<?php echo htmlspecialchars($produto['id']); ?>">
                                 <button type="submit" name="delete" class="delete-button">Excluir</button>
@@ -290,44 +296,51 @@ if (isset($_GET['logout'])) {
         <?php endif; ?>
     </div>
 
+    <!-- Script para desaparecer a mensagem após 5 segundos -->
+    <script>
+        window.onload = function() {
+            var alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                setTimeout(function() {
+                    alert.classList.add('fade-out');
+                }, 5000);
+            });
+        };
+    </script>
     <script>
         document.getElementById('upload').addEventListener('change', function(event) {
-            const files = event.target.files;
-            for (const file of files) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const img = new Image();
-                    img.onload = function() {
-                        const canvas = document.createElement('canvas');
-                        const pica = new Pica();
-                        
-                        canvas.width = 800; // Defina a largura desejada
-                        const aspectRatio = img.height / img.width;
-                        canvas.height = canvas.width * aspectRatio; // Mantém a proporção
-                        
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            const file = event.target.files[0];
+            if (!file) return;
 
-                        pica.toBlob(canvas, 'image/jpeg', 0.6) // 0.6 = qualidade
-                            .then(blob => {
-                                const formData = new FormData();
-                                formData.append('imagens[]', blob, file.name); // Adiciona a imagem comprimida
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    const pica = new Pica();
+                    canvas.width = 800; // Defina a largura desejada
+                    canvas.height = img.height * (800 / img.width); // Mantém a proporção
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-                                // Envie o FormData para o servidor
-                                return fetch('admin.php', {
-                                    method: 'POST',
-                                    body: formData
-                                });
-                            })
-                            .then(response => response.text())
+                    pica.toBlob(canvas, 'image/jpeg', 0.8) // 0.8 = qualidade
+                        .then(function (blob) {
+                            // Crie um FormData para o upload
+                            const formData = new FormData();
+                            formData.append('image', blob, file.name);
+
+                            // Envie o FormData para o servidor
+                            fetch('upload.php', {
+                                method: 'POST',
+                                body: formData
+                            }).then(response => response.text())
                             .then(result => console.log(result));
-                    };
-                    img.src = e.target.result;
+                        });
                 };
-                reader.readAsDataURL(file);
-            }
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
         });
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/pica@8.1.1/dist/pica.min.js"></script>
 </body>
 </html>
