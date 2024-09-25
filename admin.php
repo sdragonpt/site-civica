@@ -18,15 +18,6 @@ function get_imagens($produto_id) {
     return $stmt->get_result();
 }
 
-function get_imagem_principal($produto_id) {
-    global $conn;
-    $stmt = $conn->prepare("SELECT imagem FROM imagens WHERE produto_id = ? ORDER BY id ASC LIMIT 1");
-    $stmt->bind_param("i", $produto_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    return $result->fetch_assoc();
-}
-
 function get_categorias($produto_id) {
     global $conn;
     $stmt = $conn->prepare("
@@ -63,22 +54,29 @@ if (isset($_POST['add'])) {
 
         if (isset($_FILES['imagens'])) {
             $target_dir = "images/";
-            foreach ($_FILES['imagens']['name'] as $key => $name) {
-                $unique_name = uniqid() . '.jpg'; // Garante que a imagem será salva como JPEG
-                $target_file = $target_dir . $unique_name;
+            $formData = new FormData();
 
-                // Insere a imagem no banco de dados diretamente
+            // Adiciona as imagens ao FormData
+            foreach ($_FILES['imagens']['name'] as $key => $name) {
+                $formData.append('imagens[]', $_FILES['imagens']['tmp_name'][$key], $name);
+            }
+
+            // Envia as imagens para o endpoint de compressão
+            $response = file_get_contents('http://localhost:3000/compress', false, stream_context_create([
+                'http' => [
+                    'method' => 'POST',
+                    'header' => "Content-Type: multipart/form-data\r\n",
+                    'content' => $formData->getBuffer(),
+                ],
+            ]));
+
+            $compressedImages = json_decode($response, true);
+            foreach ($compressedImages as $compressedImage) {
+                // Salva o caminho da imagem comprimida no banco de dados
                 $stmt = $conn->prepare("INSERT INTO imagens (produto_id, imagem) VALUES (?, ?)");
-                $stmt->bind_param("is", $produto_id, $unique_name);
+                $stmt->bind_param("is", $produto_id, $compressedImage['path']);
                 if (!$stmt->execute()) {
                     $mensagem = "<div class='alert alert-danger'>Erro ao adicionar a imagem: " . htmlspecialchars($stmt->error) . "</div>";
-                } else {
-                    // Move o arquivo enviado para o diretório de imagens
-                    if (move_uploaded_file($_FILES['imagens']['tmp_name'][$key], $target_file)) {
-                        // O arquivo foi movido com sucesso
-                    } else {
-                        $mensagem = "<div class='alert alert-danger'>Erro ao mover a imagem para o diretório: " . htmlspecialchars($name) . "</div>";
-                    }
                 }
                 $stmt->close();
             }
@@ -98,7 +96,6 @@ $produtos = $stmt->get_result();
 $stmt->close();
 
 $tem_produtos = ($produtos->num_rows > 0);
-
 $categorias_result = $conn->query("SELECT * FROM categorias");
 
 if (isset($_POST['delete'])) {
@@ -136,7 +133,6 @@ if (isset($_GET['logout'])) {
     header("Location: login.php");
     exit();
 }
-
 ?>
 
 <!DOCTYPE html>
@@ -145,7 +141,6 @@ if (isset($_GET['logout'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Civica</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/compressorjs/1.0.5/compressor.min.js"></script> <!-- Nova biblioteca para compressão -->
     <link rel="stylesheet" href="../css/admin.css">
 </head>
 <body>
@@ -162,11 +157,11 @@ if (isset($_GET['logout'])) {
         <h2>Adicionar Produto</h2>
         <form method="post" action="" enctype="multipart/form-data">
             <div class="form-group">
-                <div><input type="text" name="nome" placeholder="Nome do Produto" required></div>
-                <div><textarea name="descricao" placeholder="Descrição" required></textarea></div>
-                <div><input type="text" name="preco" placeholder="Preço" required></div>
-                <div><input type="file" name="imagens[]" id="upload" multiple></div>
-                
+                <input type="text" name="nome" placeholder="Nome do Produto" required>
+                <textarea name="descricao" placeholder="Descrição" required></textarea>
+                <input type="text" name="preco" placeholder="Preço" required>
+                <input type="file" name="imagens[]" id="upload" multiple>
+
                 <!-- Seção de seleção de categorias -->
                 <h3>
                     Selecionar Categorias
@@ -175,8 +170,8 @@ if (isset($_GET['logout'])) {
                 <div class="category-list">
                     <?php while ($categoria = $categorias_result->fetch_assoc()): ?>
                         <label style="border: 1px solid; border-radius: 3px; padding: 4px; font-size: 14px; margin-right: 6px">
-                            <div style="width: 13px; margin: 0px; float: left;"><input type="checkbox" name="categorias[]" value="<?php echo $categoria['id']; ?>"></div>
-                            <div style="float: left; margin-top: 3px; margin-left: 5px;"><?php echo htmlspecialchars($categoria['nome']); ?></div>
+                            <input type="checkbox" name="categorias[]" value="<?php echo $categoria['id']; ?>">
+                            <?php echo htmlspecialchars($categoria['nome']); ?>
                         </label>
                     <?php endwhile; ?>
                 </div>
@@ -218,7 +213,7 @@ if (isset($_GET['logout'])) {
                         </td>
                         <td>
                             <?php while ($imagem = $imagens_produto->fetch_assoc()): ?>
-                                <img src="images/<?php echo htmlspecialchars($imagem['imagem']); ?>" alt="Imagem do Produto" style="width: 50px; height: auto;">
+                                <img src="<?php echo htmlspecialchars($imagem['imagem']); ?>" alt="Imagem" style="width: 50px; height: 50px;">
                             <?php endwhile; ?>
                         </td>
                         <td>
@@ -235,32 +230,5 @@ if (isset($_GET['logout'])) {
             <p>Nenhum produto encontrado.</p>
         <?php endif; ?>
     </div>
-
-    <script>
-        const uploadInput = document.getElementById('upload');
-        uploadInput.addEventListener('change', function () {
-            const files = this.files;
-            const formData = new FormData();
-
-            Array.from(files).forEach(file => {
-                new Compressor(file, {
-                    quality: 0.4, // Ajuste a qualidade conforme necessário
-                    success(result) {
-                        formData.append('imagens[]', result, file.name.replace(/\.[^/.]+$/, "") + '.jpg'); // Renomeia para .jpg
-                    },
-                    error(err) {
-                        console.error('Erro ao comprimir a imagem:', err);
-                    },
-                });
-            });
-
-            // Envio do FormData após a compressão
-            uploadInput.form.onsubmit = function () {
-                setTimeout(() => {
-                    // Faz o envio do FormData aqui se necessário
-                }, 100); // Aguarda a compressão
-            };
-        });
-    </script>
 </body>
 </html>
