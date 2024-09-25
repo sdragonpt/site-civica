@@ -9,6 +9,57 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 
 include 'config.php'; // Inclui a configuração de conexão com o banco de dados
 
+// Função para redimensionar e compactar a imagem
+function resize_and_compress_image($source_path, $target_path, $max_width = 800, $max_height = 600, $quality = 75) {
+    list($width, $height, $type) = getimagesize($source_path);
+    $ratio = $width / $height;
+    
+    if ($width > $height) {
+        $new_width = min($max_width, $width);
+        $new_height = $new_width / $ratio;
+    } else {
+        $new_height = min($max_height, $height);
+        $new_width = $new_height * $ratio;
+    }
+
+    $image_p = imagecreatetruecolor($new_width, $new_height);
+    
+    switch ($type) {
+        case IMAGETYPE_JPEG:
+            $image = imagecreatefromjpeg($source_path);
+            break;
+        case IMAGETYPE_PNG:
+            $image = imagecreatefrompng($source_path);
+            imagealphablending($image_p, false);
+            imagesavealpha($image_p, true);
+            break;
+        case IMAGETYPE_GIF:
+            $image = imagecreatefromgif($source_path);
+            break;
+        default:
+            return false;
+    }
+
+    imagecopyresampled($image_p, $image, 0, 0, 0, 0, $new_width, $new_height, $width, $height);
+
+    switch ($type) {
+        case IMAGETYPE_JPEG:
+            imagejpeg($image_p, $target_path, $quality);
+            break;
+        case IMAGETYPE_PNG:
+            imagepng($image_p, $target_path, 6); // PNG compression level
+            break;
+        case IMAGETYPE_GIF:
+            imagegif($image_p, $target_path);
+            break;
+    }
+
+    imagedestroy($image);
+    imagedestroy($image_p);
+
+    return true;
+}
+
 // Funções para carregar imagens e categorias associadas ao produto
 function get_imagens($produto_id) {
     global $conn;
@@ -16,6 +67,15 @@ function get_imagens($produto_id) {
     $stmt->bind_param("i", $produto_id);
     $stmt->execute();
     return $stmt->get_result();
+}
+
+function get_imagem_principal($produto_id) {
+    global $conn;
+    $stmt = $conn->prepare("SELECT imagem FROM imagens WHERE produto_id = ? ORDER BY id ASC LIMIT 1");
+    $stmt->bind_param("i", $produto_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    return $result->fetch_assoc();
 }
 
 function get_categorias($produto_id) {
@@ -52,33 +112,34 @@ if (isset($_POST['add'])) {
             }
         }
 
-        if (isset($_FILES['imagens'])) {
+        if (isset($_FILES['imagens']) && $_FILES['imagens']['error'][0] == UPLOAD_ERR_OK) {
             $target_dir = "images/";
-            $formData = new FormData();
-
-            // Adiciona as imagens ao FormData
             foreach ($_FILES['imagens']['name'] as $key => $name) {
-                $formData.append('imagens[]', $_FILES['imagens']['tmp_name'][$key], $name);
-            }
+                $target_file = $target_dir . basename($name);
+                $temp_file = $_FILES['imagens']['tmp_name'][$key];
+                $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
 
-            // Envia as imagens para o endpoint de compressão
-            $response = file_get_contents('http://localhost:3000/compress', false, stream_context_create([
-                'http' => [
-                    'method' => 'POST',
-                    'header' => "Content-Type: multipart/form-data\r\n",
-                    'content' => $formData->getBuffer(),
-                ],
-            ]));
+                $unique_name = uniqid() . '.' . $imageFileType;
+                $target_file = $target_dir . $unique_name;
 
-            $compressedImages = json_decode($response, true);
-            foreach ($compressedImages as $compressedImage) {
-                // Salva o caminho da imagem comprimida no banco de dados
-                $stmt = $conn->prepare("INSERT INTO imagens (produto_id, imagem) VALUES (?, ?)");
-                $stmt->bind_param("is", $produto_id, $compressedImage['path']);
-                if (!$stmt->execute()) {
-                    $mensagem = "<div class='alert alert-danger'>Erro ao adicionar a imagem: " . htmlspecialchars($stmt->error) . "</div>";
+                $check = getimagesize($temp_file);
+                if ($check !== false) {
+                    $unique_name = uniqid() . '.' . $imageFileType;
+                    $target_file = $target_dir . $unique_name;
+
+                    if (resize_and_compress_image($temp_file, $target_file)) {
+                        $stmt = $conn->prepare("INSERT INTO imagens (produto_id, imagem) VALUES (?, ?)");
+                        $stmt->bind_param("is", $produto_id, $unique_name);
+                        if (!$stmt->execute()) {
+                            $mensagem = "<div class='alert alert-danger'>Erro ao adicionar a imagem: " . htmlspecialchars($stmt->error) . "</div>";
+                        }
+                        $stmt->close();
+                    } else {
+                        $mensagem = "<div class='alert alert-danger'>Desculpe, ocorreu um erro ao redimensionar e comprimir a imagem.</div>";
+                    }
+                } else {
+                    $mensagem = "<div class='alert alert-danger'>O arquivo não é uma imagem.</div>";
                 }
-                $stmt->close();
             }
         }
 
@@ -96,6 +157,7 @@ $produtos = $stmt->get_result();
 $stmt->close();
 
 $tem_produtos = ($produtos->num_rows > 0);
+
 $categorias_result = $conn->query("SELECT * FROM categorias");
 
 if (isset($_POST['delete'])) {
@@ -133,6 +195,7 @@ if (isset($_GET['logout'])) {
     header("Location: login.php");
     exit();
 }
+
 ?>
 
 <!DOCTYPE html>
@@ -141,7 +204,8 @@ if (isset($_GET['logout'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Civica</title>
-    <link rel="stylesheet" href="../css/admin.css">
+    <script src="https://cdn.jsdelivr.net/npm/pica@8.1.1/dist/pica.min.js"></script>
+    <link rel="stylesheet" href="./css/admin.css">
 </head>
 <body>
     <div class="admin-container">
@@ -157,11 +221,11 @@ if (isset($_GET['logout'])) {
         <h2>Adicionar Produto</h2>
         <form method="post" action="" enctype="multipart/form-data">
             <div class="form-group">
-                <input type="text" name="nome" placeholder="Nome do Produto" required>
-                <textarea name="descricao" placeholder="Descrição" required></textarea>
-                <input type="text" name="preco" placeholder="Preço" required>
-                <input type="file" name="imagens[]" id="upload" multiple>
-
+                <div><input type="text" name="nome" placeholder="Nome do Produto" required></div>
+                <div><textarea name="descricao" placeholder="Descrição" required></textarea></div>
+                <div><input type="text" name="preco" placeholder="Preço" required></div>
+                <div><input type="file" name="imagens[]" id="upload" multiple></div>
+                
                 <!-- Seção de seleção de categorias -->
                 <h3>
                     Selecionar Categorias
@@ -170,8 +234,8 @@ if (isset($_GET['logout'])) {
                 <div class="category-list">
                     <?php while ($categoria = $categorias_result->fetch_assoc()): ?>
                         <label style="border: 1px solid; border-radius: 3px; padding: 4px; font-size: 14px; margin-right: 6px">
-                            <input type="checkbox" name="categorias[]" value="<?php echo $categoria['id']; ?>">
-                            <?php echo htmlspecialchars($categoria['nome']); ?>
+                            <div style="width: 13px; margin: 0px; float: left;"><input type="checkbox" name="categorias[]" value="<?php echo $categoria['id']; ?>"></div>
+                            <div style="float: left; margin-top: 3px; margin-left: 5px;"><?php echo htmlspecialchars($categoria['nome']); ?></div>
                         </label>
                     <?php endwhile; ?>
                 </div>
@@ -213,13 +277,14 @@ if (isset($_GET['logout'])) {
                         </td>
                         <td>
                             <?php while ($imagem = $imagens_produto->fetch_assoc()): ?>
-                                <img src="<?php echo htmlspecialchars($imagem['imagem']); ?>" alt="Imagem" style="width: 50px; height: 50px;">
+                                <img src="images/<?php echo htmlspecialchars($imagem['imagem']); ?>" alt="Imagem" style="width: 50px; height: 50px; object-fit: cover; margin-right: 5px;">
                             <?php endwhile; ?>
                         </td>
                         <td>
-                            <form method="post" action="">
+                            <a style="text-decoration: none;" href="editar_produto.php?id=<?php echo htmlspecialchars($produto['id']); ?>" class="edit-button">Editar</a>
+                            <form method="post" action="" style="display: inline;">
                                 <input type="hidden" name="id" value="<?php echo htmlspecialchars($produto['id']); ?>">
-                                <button type="submit" name="delete">Deletar</button>
+                                <button type="submit" name="delete" class="delete-button">Excluir</button>
                             </form>
                         </td>
                     </tr>
@@ -227,8 +292,55 @@ if (isset($_GET['logout'])) {
             </tbody>
         </table>
         <?php else: ?>
-            <p>Nenhum produto encontrado.</p>
+            <p>Nenhum produto foi encontrado.</p>
         <?php endif; ?>
     </div>
+
+    <!-- Script para desaparecer a mensagem após 5 segundos -->
+    <script>
+        window.onload = function() {
+            var alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                setTimeout(function() {
+                    alert.classList.add('fade-out');
+                }, 5000);
+            });
+        };
+    </script>
+    <script>
+        document.getElementById('upload').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    const pica = new Pica();
+                    canvas.width = 800; // Defina a largura desejada
+                    canvas.height = img.height * (800 / img.width); // Mantém a proporção
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                    pica.toBlob(canvas, 'image/jpg', 0.6) // 0.8 = qualidade
+                        .then(function (blob) {
+                            // Crie um FormData para o upload
+                            const formData = new FormData();
+                            formData.append('image', blob, file.name);
+
+                            // Envie o FormData para o servidor
+                            fetch('upload.php', {
+                                method: 'POST',
+                                body: formData
+                            }).then(response => response.text())
+                            .then(result => console.log(result));
+                        });
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    </script>
 </body>
 </html>
