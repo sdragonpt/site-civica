@@ -38,14 +38,6 @@ function get_produtos($search = '', $sort_by = 'recent', $categoria_id = null) {
     return $conn->query($sql);
 }
 
-// Defina o tamanho máximo desejado para a descrição
-$max_tamanho = 100; // ajuste o número conforme necessário
-
-// Trunca a descrição se ela exceder o tamanho máximo
-if (strlen($produto_descricao) > $max_tamanho) {
-    $produto_descricao = substr($produto_descricao, 0, $max_tamanho) . '...';
-}
-
 // Processar filtros e ordenação
 $search = isset($_GET['search']) ? $_GET['search'] : '';
 $sort_by = isset($_GET['sort']) ? $_GET['sort'] : 'recent';
@@ -158,6 +150,15 @@ $produtos = get_produtos($search, $sort_by, $categoria_id);
                             <img src="<?php echo 'images/' . $imagem_url; ?>" class="card-img-top" alt="<?php echo $produto_nome; ?>">
                             <div class="card-body">
                                 <h5 class="card-title"><?php echo $produto_nome; ?></h5>
+                                <?php
+                                // Defina o tamanho máximo desejado para a descrição
+                                $max_tamanho = 100; // ajuste o número conforme necessário
+
+                                // Trunca a descrição se ela exceder o tamanho máximo
+                                if (strlen($produto_descricao) > $max_tamanho) {
+                                    $produto_descricao = substr($produto_descricao, 0, $max_tamanho) . '...';
+                                }
+                                ?>
                                 <p class="card-text"><?php echo $produto_descricao; ?></p>
                                 <p class="card-text"><strong>Preço:</strong> <?php echo $produto_preco; ?>€</p>
                                 <a href="produto.php?id=<?php echo htmlspecialchars($produto_id); ?>" class="btn btn-primary">Mais Detalhes</a>
