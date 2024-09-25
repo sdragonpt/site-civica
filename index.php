@@ -8,34 +8,52 @@ $categorias_result = $conn->query("SELECT * FROM categorias");
 function get_produtos($search = '', $sort_by = 'recent', $categoria_id = null) {
     global $conn;
     $order_by = 'p.id DESC';
+    
     if ($sort_by === 'name') {
         $order_by = 'p.nome ASC';
     } elseif ($sort_by === 'price') {
         $order_by = 'p.preco ASC';
     }
 
-    $sql = "SELECT p.id, p.nome, p.descricao, p.preco, i.imagem, 
-                   (SELECT GROUP_CONCAT(c.nome SEPARATOR ', ') 
-                    FROM produto_categoria pc 
-                    JOIN categorias c ON pc.categoria_id = c.id 
-                    WHERE pc.produto_id = p.id) AS categorias 
+    // Modificação na consulta SQL para incluir a tabela produto_categoria
+    $sql = "SELECT p.id, p.nome, p.descricao, p.preco, i.imagem 
             FROM produtos p
             LEFT JOIN imagens i ON p.id = i.produto_id
-            WHERE i.imagem IS NOT NULL";
+            LEFT JOIN produto_categoria pc ON p.id = pc.produto_id";
 
+    // Adiciona a condição de busca pelo nome do produto
     if ($search) {
         $search = $conn->real_escape_string($search);
-        $sql .= " AND p.nome LIKE '%$search%'";
+        $sql .= " WHERE p.nome LIKE '%$search%'";
     }
-    
+
+    // Adiciona a condição de filtragem pela categoria
     if ($categoria_id) {
         $categoria_id = intval($categoria_id);
-        $sql .= " AND p.categoria_id = $categoria_id";
+        $sql .= $search ? " AND pc.categoria_id = $categoria_id" : " WHERE pc.categoria_id = $categoria_id";
     }
-    
+
     $sql .= " GROUP BY p.id ORDER BY $order_by";
-    
+
     return $conn->query($sql);
+}
+
+function get_categorias_por_produto($produto_id) {
+    global $conn;
+
+    $sql = "SELECT c.nome 
+            FROM produto_categoria pc 
+            JOIN categorias c ON pc.categoria_id = c.id 
+            WHERE pc.produto_id = $produto_id";
+
+    $resultado = $conn->query($sql);
+    $categorias = [];
+
+    while ($categoria = $resultado->fetch_assoc()) {
+        $categorias[] = htmlspecialchars($categoria['nome']);
+    }
+
+    return implode(', ', $categorias); // Retorna as categorias como uma string separada por vírgulas
 }
 
 // Processar filtros e ordenação
@@ -144,7 +162,9 @@ $produtos = get_produtos($search, $sort_by, $categoria_id);
                         $produto_descricao = htmlspecialchars($produto['descricao']);
                         $produto_preco = htmlspecialchars($produto['preco']);
                         $imagem_url = htmlspecialchars($produto['imagem']);
-                        $categorias = htmlspecialchars($produto['categorias']); // Captura as categorias
+                        
+                        // Chama a nova função para obter as categorias
+                        $categorias = get_categorias_por_produto($produto_id);
                     ?>
                     <div class="col-md-4 mb-4">
                         <div class="card">
@@ -172,7 +192,7 @@ $produtos = get_produtos($search, $sort_by, $categoria_id);
     </div>
 
      <!-- Rodapé -->
-     <div class="fim" style="background-color: #333; margin-top: 8vw">
+    <div class="fim" style="background-color: #333; margin-top: 8vw">
         <footer id="contacto" style="background-color: #333; color: #ffffff;">
             <div class="container" style="max-width: 1300px; padding: 20px 0;">
                 <div class="footer-section row">
