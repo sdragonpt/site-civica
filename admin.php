@@ -249,7 +249,6 @@ if (isset($_GET['logout'])) {
             });
         };
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/pica@8.1.1/dist/pica.min.js"></script>
 
     <script>
         document.getElementById('upload').addEventListener('change', function(event) {
@@ -282,7 +281,6 @@ if (isset($_GET['logout'])) {
                                     }).then(response => response.text())
                                     .then(result => {
                                         console.log(result);
-                                        // Se desejar, adicione uma mensagem de sucesso aqui
                                         alert('Imagens enviadas com sucesso!'); // Feedback ao usuário
                                     })
                                     .catch(error => {
@@ -290,6 +288,10 @@ if (isset($_GET['logout'])) {
                                         alert('Erro ao enviar as imagens.'); // Feedback ao usuário
                                     });
                                 }
+                            })
+                            .catch(error => {
+                                console.error('Erro ao comprimir a imagem:', error);
+                                alert('Erro ao comprimir a imagem.'); // Feedback ao usuário
                             });
                     };
                     img.src = e.target.result;
