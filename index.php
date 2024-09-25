@@ -138,28 +138,18 @@ $produtos = get_produtos($search, $sort_by, $categoria_id);
                 <div class="row">
                     <?php
                     // Exibir os produtos
-                    while ($produto = $produtos->fetch_assoc()) {                      
+                    while ($produto = $produtos->fetch_assoc()) {
                         $produto_id = htmlspecialchars($produto['id']);
                         $produto_nome = htmlspecialchars($produto['nome']);
                         $produto_descricao = htmlspecialchars($produto['descricao']);
                         $produto_preco = htmlspecialchars($produto['preco']);
                         $imagem_url = htmlspecialchars($produto['imagem']);
-                        $categorias = htmlspecialchars($produto['categorias']); // Captura as categorias
                     ?>
                     <div class="col-md-4 mb-4">
                         <div class="card">
                             <img src="<?php echo 'images/' . $imagem_url; ?>" class="card-img-top" alt="<?php echo $produto_nome; ?>">
                             <div class="card-body">
                                 <h5 class="card-title"><?php echo $produto_nome; ?></h5>
-                                <?php
-                                // Defina o tamanho máximo desejado para a descrição
-                                $max_tamanho = 100; // ajuste o número conforme necessário
-
-                                // Trunca a descrição se ela exceder o tamanho máximo
-                                if (strlen($produto_descricao) > $max_tamanho) {
-                                    $produto_descricao = substr($produto_descricao, 0, $max_tamanho) . '...';
-                                }
-                                ?>
                                 <p class="card-text"><?php echo $produto_descricao; ?></p>
                                 <p class="card-text"><strong>Preço:</strong> <?php echo $produto_preco; ?>€</p>
                                 <a href="produto.php?id=<?php echo htmlspecialchars($produto_id); ?>" class="btn btn-primary">Mais Detalhes</a>
