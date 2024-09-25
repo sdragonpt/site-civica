@@ -133,10 +133,6 @@ $produtos = get_produtos($search, $sort_by, $categoria_id);
                             <?php endwhile; ?>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <input type="hidden" name="search" value="<?php echo htmlspecialchars($search); ?>">
-                        <button type="submit" class="btn btn-primary btn-sm">Aplicar Filtros</button>
-                    </div>
                 </form>
 
                 <div class="row">
@@ -183,16 +179,26 @@ $produtos = get_produtos($search, $sort_by, $categoria_id);
 
                     <div class="location col-md-4">
                         <h3>Localização</h3>
-                        <p>Morada: Zona Industrial, Rua do Parque, nº 2 - 1º andar, 3700-130 Aveiro, Portugal</p>
+                        <p>Zona Industrial de Constantim, Lote 143 e 144</p>
+                        <p>5000-082 Vila Real, Portugal</p>
+                        <p>GPS: Lat. 41°16'43'' N - Long. 7°42'22'' W</p>
                     </div>
 
-                    <div class="social-media col-md-4">
-                        <h3>Redes Sociais</h3>
-                        <a href="https://www.instagram.com/civicaengenharia/" target="_blank" style="color: #ffcc00;">Instagram</a>
-                        <br>
-                        <a href="https://www.facebook.com/civicaengenharia/" target="_blank" style="color: #ffcc00;">Facebook</a>
-                    </div>
+                    <div class="about col-md-4">
+                        <h3>Sobre Nós</h3>
+                        <p>Cívica - Construções, Engenharia e Equipamentos, Lda</p>
+                        <p>Sociedade por Quotas</p>
+                        <p>Capital Social 100.000,00€</p>
+                        <p>NIF/EORI: PT 504 117 246</p>
+                        <p>Alvará: nº 43194</p>
                 </div>
+            </div>
+
+            <!-- Seção Social -->
+            <div class="social" style="background-color: #222; color: #ffffff; padding: 20px 0; text-align: center;">
+                <a href="#" style="color: #ffcc00; margin-right: 6px;"><i class="fa-brands fa-facebook"></i> Facebook</a>
+                <a href="#" style="color: #ffcc00; margin-right: 6px;"><i class="fa-brands fa-instagram"></i> Instagram</a>
+                <p class="mt-2">&copy; 2024 Civica - Todos os direitos reservados</p>
             </div>
         </footer>
     </div>
