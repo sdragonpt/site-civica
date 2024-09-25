@@ -269,7 +269,7 @@ if (isset($_GET['logout'])) {
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
                         // Aqui convertendo para JPEG e comprimindo
-                        pica.toBlob(canvas, 'image/jpeg', 0.8) // 0.8 = qualidade
+                        pica.toBlob(canvas, 'image/jpeg', 0.4) // 0.8 = qualidade
                             .then(function(blob) {
                                 formData.append('imagens[]', blob, file.name.replace(/\.[^/.]+$/, "") + '.jpg'); // Renomeia para .jpg
                                 filesProcessed++; // Incrementa o contador
