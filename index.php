@@ -1,6 +1,8 @@
 <?php
 include('config.php'); // Inclua o arquivo de configuração do banco de dados
 
+$max_tamanho = 100;
+
 // Obter todas as categorias
 $categorias_result = $conn->query("SELECT * FROM categorias");
 
