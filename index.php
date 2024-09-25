@@ -138,12 +138,7 @@ $produtos = get_produtos($search, $sort_by, $categoria_id);
                 <div class="row">
                     <?php
                     // Exibir os produtos
-                    while ($produto = $produtos->fetch_assoc()) {
-                        // Cheque se o produto pertence à categoria
-                        if ($categoria_id && $produto['categoria_id'] != $categoria_id) {
-                            continue; // Pula para o próximo produto se não pertencer à categoria
-                        }
-                        
+                    while ($produto = $produtos->fetch_assoc()) {                      
                         $produto_id = htmlspecialchars($produto['id']);
                         $produto_nome = htmlspecialchars($produto['nome']);
                         $produto_descricao = htmlspecialchars($produto['descricao']);
@@ -155,7 +150,6 @@ $produtos = get_produtos($search, $sort_by, $categoria_id);
                         <div class="card">
                             <img src="<?php echo 'images/' . $imagem_url; ?>" class="card-img-top" alt="<?php echo $produto_nome; ?>">
                             <div class="card-body">
-                                <p class="text-muted" style="font-size: 0.85em;"><?php echo $categorias; ?></p> <!-- Exibe as categorias -->
                                 <h5 class="card-title"><?php echo $produto_nome; ?></h5>
                                 <?php
                                 // Defina o tamanho máximo desejado para a descrição
