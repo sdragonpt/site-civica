@@ -173,7 +173,7 @@ $produtos = get_produtos($search, $sort_by, $categoria_id);
                     ?>
                     <div class="col-md-4 mb-4">
                         <div class="card">
-                            <img src="<?php echo 'images/compressed/' . $imagem_url; ?>" class="card-img-top" alt="<?php echo $produto_nome; ?>">
+                            <img src="<?php echo 'images/' . $imagem_url; ?>" class="card-img-top" alt="<?php echo $produto_nome; ?>">
                             <div class="card-body">
                                 <p class="text-muted" style="font-size: 0.85em;"><?php echo $categorias ? $categorias : 'Sem categoria'; ?></p> <!-- Exibe as categorias -->
                                 <h5 class="card-title"><?php echo $produto_nome; ?></h5>

@@ -197,7 +197,7 @@ if (isset($_GET['logout'])) {
 if (isset($_POST['compress'])) {
     $temp_file = $_FILES['imagem']['tmp_name'];
     $imageFileType = strtolower(pathinfo($_FILES['imagem']['name'], PATHINFO_EXTENSION));
-    $target_dir = "images/compressed/";
+    $target_dir = "images/";
     $target_file = $target_dir . uniqid() . '.' . $imageFileType;
 
     if (resize_and_compress_image($temp_file, $target_file, 800, 600)) {
