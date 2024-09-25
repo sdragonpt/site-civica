@@ -45,6 +45,7 @@ $categoria_id = isset($_GET['categoria']) ? $_GET['categoria'] : null;
 
 $produtos = get_produtos($search, $sort_by, $categoria_id);
 ?>
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -70,7 +71,7 @@ $produtos = get_produtos($search, $sort_by, $categoria_id);
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav mr-auto">
                 <li class="nav-item active">
-                    <a class="nav-link" href="index.html">Início <span class="sr-only">(página atual)</span></a>
+                    <a class="nav-link" href="index.php">Início <span class="sr-only">(página atual)</span></a>
                 </li>
                 <li class="nav-item active">
                     <a class="nav-link" href="#contacto">Contactos <span class="sr-only">(página atual)</span></a>
@@ -91,10 +92,6 @@ $produtos = get_produtos($search, $sort_by, $categoria_id);
                 <h4>Categorias</h4>
                 <ul class="list-group">
                     <?php
-                    include('config.php'); // Inclua o arquivo de configuração do banco de dados
-
-                    // Obter todas as categorias
-                    $categorias_result = $conn->query("SELECT * FROM categorias");
                     while ($categoria = $categorias_result->fetch_assoc()): 
                         $categoria_nome = htmlspecialchars($categoria['nome']);
                     ?>
@@ -140,50 +137,8 @@ $produtos = get_produtos($search, $sort_by, $categoria_id);
 
                 <div class="row">
                     <?php
-                    // Função para obter os produtos com base nos filtros e ordenação
-                    function get_produtos($search = '', $sort_by = 'recent', $categoria_id = null) {
-                        global $conn;
-                        $order_by = 'p.id DESC';
-                        if ($sort_by === 'name') {
-                            $order_by = 'p.nome ASC';
-                        } elseif ($sort_by === 'price') {
-                            $order_by = 'p.preco ASC';
-                        }
-
-                        $sql = "SELECT p.id, p.nome, p.descricao, p.preco, i.imagem 
-                                FROM produtos p
-                                LEFT JOIN imagens i ON p.id = i.produto_id
-                                WHERE i.imagem IS NOT NULL";
-                        
-                        if ($search) {
-                            $search = $conn->real_escape_string($search);
-                            $sql .= " AND p.nome LIKE '%$search%'";
-                        }
-                        
-                        if ($categoria_id) {
-                            $categoria_id = intval($categoria_id);
-                            $sql .= " AND p.categoria_id = $categoria_id";
-                        }
-                        
-                        $sql .= " GROUP BY p.id ORDER BY $order_by";
-                        
-                        return $conn->query($sql);
-                    }
-
-                    // Processar filtros e ordenação
-                    $search = isset($_GET['search']) ? $_GET['search'] : '';
-                    $sort_by = isset($_GET['sort']) ? $_GET['sort'] : 'recent';
-                    $categoria_id = isset($_GET['categoria']) ? $_GET['categoria'] : null;
-
-                    $produtos = get_produtos($search, $sort_by, $categoria_id);
-
                     // Exibir os produtos
                     while ($produto = $produtos->fetch_assoc()) {
-                        // Cheque se o produto pertence à categoria
-                        if ($categoria_id && $produto['categoria_id'] != $categoria_id) {
-                            continue; // Pula para o próximo produto se não pertencer à categoria
-                        }
-                        
                         $produto_id = htmlspecialchars($produto['id']);
                         $produto_nome = htmlspecialchars($produto['nome']);
                         $produto_descricao = htmlspecialchars($produto['descricao']);
@@ -224,59 +179,23 @@ $produtos = get_produtos($search, $sort_by, $categoria_id);
 
                     <div class="location col-md-4">
                         <h3>Localização</h3>
-                        <p>Zona Industrial de Constantim, Lote 143 e 144</p>
-                        <p>5000-082 Vila Real, Portugal</p>
-                        <p>GPS: Lat. 41°16'43'' N - Long. 7°42'22'' W</p>
+                        <p>Morada: Zona Industrial, Rua do Parque, nº 2 - 1º andar, 3700-130 Aveiro, Portugal</p>
                     </div>
 
-                    <div class="about col-md-4">
-                        <h3>Sobre Nós</h3>
-                        <p>Cívica - Construções, Engenharia e Equipamentos, Lda</p>
-                        <p>Sociedade por Quotas</p>
-                        <p>Capital Social 100.000,00€</p>
-                        <p>NIF/EORI: PT 504 117 246</p>
-                        <p>Alvará: nº 43194</p>
+                    <div class="social-media col-md-4">
+                        <h3>Redes Sociais</h3>
+                        <a href="https://www.instagram.com/civicaengenharia/" target="_blank" style="color: #ffcc00;">Instagram</a>
+                        <br>
+                        <a href="https://www.facebook.com/civicaengenharia/" target="_blank" style="color: #ffcc00;">Facebook</a>
                     </div>
                 </div>
-            </div>
-
-            <!-- Seção Social -->
-            <div class="social" style="background-color: #222; color: #ffffff; padding: 20px 0; text-align: center;">
-                <a href="#" style="color: #ffcc00; margin-right: 6px;"><i class="fa-brands fa-facebook"></i> Facebook</a>
-                <a href="#" style="color: #ffcc00; margin-right: 6px;"><i class="fa-brands fa-instagram"></i> Instagram</a>
-                <p class="mt-2">&copy; 2024 Civica - Todos os direitos reservados</p>
             </div>
         </footer>
     </div>
 
-
-    <!-- Bootstrap JS, Popper.js, e jQuery -->
-    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.0.7/dist/umd/popper.min.js"></script>
+    <!-- JavaScript e jQuery -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-
-    <script>
-        // Função para remover a âncora da URL
-        function removeHash() {
-            // Atualiza a URL removendo o fragmento (âmbora) sem recarregar a página
-            history.replaceState(null, null, location.pathname + location.search);
-        }
-
-        // Submete o formulário automaticamente ao alterar a ordenação ou a categoria
-        document.getElementById('sortByName').addEventListener('change', function() {
-            removeHash(); // Remove a âncora da URL
-            document.getElementById('filtersForm').submit();
-        });
-
-        document.getElementById('filterCategory').addEventListener('change', function() {
-            // Limpa o campo de pesquisa ao selecionar uma nova categoria
-            var searchInput = document.querySelector('input[name="search"]');
-            searchInput.value = '';
-            removeHash(); // Remove a âncora da URL
-            document.getElementById('filtersForm').submit();
-        });
-    </script>
-
-
 </body>
 </html>
