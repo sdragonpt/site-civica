@@ -64,8 +64,8 @@ if (isset($_POST['add'])) {
         if (isset($_FILES['imagens'])) {
             $target_dir = "images/";
             foreach ($_FILES['imagens']['name'] as $key => $name) {
-                $imageFileType = strtolower(pathinfo($name, PATHINFO_EXTENSION));
-                $unique_name = uniqid() . '.' . $imageFileType;
+                $imageFileType = 'jpeg'; // Defina como jpeg, pois já estamos convertendo no frontend
+                $unique_name = uniqid() . '.' . $imageFileType; // Nome único para a imagem
                 $target_file = $target_dir . $unique_name;
         
                 // Insere a imagem no banco de dados diretamente
@@ -268,9 +268,10 @@ if (isset($_GET['logout'])) {
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
+                        // Aqui convertendo para JPEG e comprimindo
                         pica.toBlob(canvas, 'image/jpeg', 0.8) // 0.8 = qualidade
                             .then(function(blob) {
-                                formData.append('imagens[]', blob, file.name); // Adiciona a imagem comprimida ao FormData
+                                formData.append('imagens[]', blob, file.name.replace(/\.[^/.]+$/, "") + '.jpg'); // Renomeia para .jpg
                                 filesProcessed++; // Incrementa o contador
 
                                 // Se todos os arquivos foram processados, envie o FormData
