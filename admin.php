@@ -9,6 +9,25 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 
 include 'config.php'; // Inclui a configuração de conexão com o banco de dados
 
+// Função para compressão de imagens
+function compress_image($source, $destination, $quality) {
+    $info = getimagesize($source);
+
+    if ($info['mime'] == 'image/jpeg' || $info['mime'] == 'image/jpg') {
+        $image = imagecreatefromjpeg($source);
+        imagejpeg($image, $destination, $quality); // Ajuste a qualidade (0 a 100)
+    } elseif ($info['mime'] == 'image/gif') {
+        $image = imagecreatefromgif($source);
+        imagegif($image, $destination);
+    } elseif ($info['mime'] == 'image/png') {
+        $image = imagecreatefrompng($source);
+        imagepng($image, $destination, 6); // 6 é um bom compromisso entre qualidade e tamanho
+    }
+
+    // Libera a memória
+    imagedestroy($image);
+}
+
 // Funções para carregar imagens e categorias associadas ao produto
 function get_imagens($produto_id) {
     global $conn;
@@ -16,6 +35,15 @@ function get_imagens($produto_id) {
     $stmt->bind_param("i", $produto_id);
     $stmt->execute();
     return $stmt->get_result();
+}
+
+function get_imagem_principal($produto_id) {
+    global $conn;
+    $stmt = $conn->prepare("SELECT imagem FROM imagens WHERE produto_id = ? ORDER BY id ASC LIMIT 1");
+    $stmt->bind_param("i", $produto_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    return $result->fetch_assoc();
 }
 
 function get_categorias($produto_id) {
@@ -43,6 +71,7 @@ if (isset($_POST['add'])) {
         $produto_id = $stmt->insert_id;
         $stmt->close();
 
+        // Inserir categorias associadas
         if (isset($_POST['categorias']) && is_array($_POST['categorias'])) {
             foreach ($_POST['categorias'] as $categoria_id) {
                 $stmt = $conn->prepare("INSERT INTO produto_categoria (produto_id, categoria_id) VALUES (?, ?)");
@@ -52,23 +81,23 @@ if (isset($_POST['add'])) {
             }
         }
 
-        if (isset($_FILES['imagens']) && $_FILES['imagens']['error'][0] == UPLOAD_ERR_OK) {
+        // Processar imagens
+        if (isset($_FILES['imagens']) && is_array($_FILES['imagens']['name'])) {
             $target_dir = "images/";
             foreach ($_FILES['imagens']['name'] as $key => $name) {
-                $target_file = $target_dir . basename($name);
                 $temp_file = $_FILES['imagens']['tmp_name'][$key];
+                $imageFileType = strtolower(pathinfo($name, PATHINFO_EXTENSION));
 
-                // Verifica se é uma imagem
-                if (getimagesize($temp_file) !== false) {
-                    $unique_name = uniqid() . '-' . basename($name);
-                    $target_file = $target_dir . $unique_name;
+                // Gerar um nome único para a imagem
+                $unique_name = uniqid() . '.' . $imageFileType;
+                $target_file = $target_dir . $unique_name;
 
-                    // Mova o arquivo para o diretório de destino
-                    move_uploaded_file($temp_file, $target_file);
-
-                    // Compressão da imagem
-                    compress_image($target_file, $target_file, 75); // 75 é a qualidade JPEG
-
+                $check = getimagesize($temp_file);
+                if ($check !== false) {
+                    // Chama a função de compressão para cada imagem
+                    compress_image($temp_file, $target_file, 50); // Ajuste a qualidade conforme necessário
+                    
+                    // Insere o caminho da imagem na base de dados
                     $stmt = $conn->prepare("INSERT INTO imagens (produto_id, imagem) VALUES (?, ?)");
                     $stmt->bind_param("is", $produto_id, $unique_name);
                     if (!$stmt->execute()) {
@@ -87,26 +116,6 @@ if (isset($_POST['add'])) {
     } else {
         $mensagem = "<div class='alert alert-danger'>Erro ao adicionar o produto: " . htmlspecialchars($stmt->error) . "</div>";
     }
-}
-
-// Função para compressão de imagens
-function compress_image($source, $destination, $quality = 30) { // Definindo a qualidade padrão como 50
-    $info = getimagesize($source);
-
-    if ($info['mime'] == 'image/jpeg' || $info['mime'] == 'image/jpg') {
-        $image = imagecreatefromjpeg($source);
-        imagejpeg($image, $destination, $quality); // Usando a qualidade fornecida
-    } elseif ($info['mime'] == 'image/gif') {
-        $image = imagecreatefromgif($source);
-        imagegif($image, $destination);
-    } elseif ($info['mime'] == 'image/png') {
-        $image = imagecreatefrompng($source);
-        // A qualidade do PNG é de 0 (sem compressão) a 9 (compressão máxima)
-        imagepng($image, $destination, 6); // 6 é um bom compromisso entre qualidade e tamanho
-    }
-
-    // Libera a memória
-    imagedestroy($image);
 }
 
 
