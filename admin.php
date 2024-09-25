@@ -9,57 +9,6 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 
 include 'config.php'; // Inclui a configuração de conexão com o banco de dados
 
-// Função para redimensionar e compactar a imagem
-function resize_and_compress_image($source_path, $target_path, $max_width = 800, $max_height = 600, $quality = 75) {
-    list($width, $height, $type) = getimagesize($source_path);
-    $ratio = $width / $height;
-    
-    if ($width > $height) {
-        $new_width = min($max_width, $width);
-        $new_height = $new_width / $ratio;
-    } else {
-        $new_height = min($max_height, $height);
-        $new_width = $new_height * $ratio;
-    }
-
-    $image_p = imagecreatetruecolor($new_width, $new_height);
-    
-    switch ($type) {
-        case IMAGETYPE_JPEG:
-            $image = imagecreatefromjpeg($source_path);
-            break;
-        case IMAGETYPE_PNG:
-            $image = imagecreatefrompng($source_path);
-            imagealphablending($image_p, false);
-            imagesavealpha($image_p, true);
-            break;
-        case IMAGETYPE_GIF:
-            $image = imagecreatefromgif($source_path);
-            break;
-        default:
-            return false;
-    }
-
-    imagecopyresampled($image_p, $image, 0, 0, 0, 0, $new_width, $new_height, $width, $height);
-
-    switch ($type) {
-        case IMAGETYPE_JPEG:
-            imagejpeg($image_p, $target_path, $quality);
-            break;
-        case IMAGETYPE_PNG:
-            imagepng($image_p, $target_path, 6); // PNG compression level
-            break;
-        case IMAGETYPE_GIF:
-            imagegif($image_p, $target_path);
-            break;
-    }
-
-    imagedestroy($image);
-    imagedestroy($image_p);
-
-    return true;
-}
-
 // Funções para carregar imagens e categorias associadas ao produto
 function get_imagens($produto_id) {
     global $conn;
@@ -112,34 +61,21 @@ if (isset($_POST['add'])) {
             }
         }
 
-        if (isset($_FILES['imagens']) && $_FILES['imagens']['error'][0] == UPLOAD_ERR_OK) {
+        // Aqui não é mais necessário redimensionar e comprimir as imagens
+        if (isset($_FILES['imagens'])) {
             $target_dir = "images/";
             foreach ($_FILES['imagens']['name'] as $key => $name) {
-                $target_file = $target_dir . basename($name);
-                $temp_file = $_FILES['imagens']['tmp_name'][$key];
-                $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
-
+                $imageFileType = strtolower(pathinfo($name, PATHINFO_EXTENSION));
                 $unique_name = uniqid() . '.' . $imageFileType;
                 $target_file = $target_dir . $unique_name;
 
-                $check = getimagesize($temp_file);
-                if ($check !== false) {
-                    $unique_name = uniqid() . '.' . $imageFileType;
-                    $target_file = $target_dir . $unique_name;
-
-                    if (resize_and_compress_image($temp_file, $target_file)) {
-                        $stmt = $conn->prepare("INSERT INTO imagens (produto_id, imagem) VALUES (?, ?)");
-                        $stmt->bind_param("is", $produto_id, $unique_name);
-                        if (!$stmt->execute()) {
-                            $mensagem = "<div class='alert alert-danger'>Erro ao adicionar a imagem: " . htmlspecialchars($stmt->error) . "</div>";
-                        }
-                        $stmt->close();
-                    } else {
-                        $mensagem = "<div class='alert alert-danger'>Desculpe, ocorreu um erro ao redimensionar e comprimir a imagem.</div>";
-                    }
-                } else {
-                    $mensagem = "<div class='alert alert-danger'>O arquivo não é uma imagem.</div>";
+                // Insere a imagem no banco de dados diretamente
+                $stmt = $conn->prepare("INSERT INTO imagens (produto_id, imagem) VALUES (?, ?)");
+                $stmt->bind_param("is", $produto_id, $unique_name);
+                if (!$stmt->execute()) {
+                    $mensagem = "<div class='alert alert-danger'>Erro ao adicionar a imagem: " . htmlspecialchars($stmt->error) . "</div>";
                 }
+                $stmt->close();
             }
         }
 
@@ -307,39 +243,43 @@ if (isset($_GET['logout'])) {
             });
         };
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/pica@8.1.1/dist/pica.min.js"></script>
+
     <script>
         document.getElementById('upload').addEventListener('change', function(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+            const files = event.target.files;
+            const formData = new FormData();
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = new Image();
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    const pica = new Pica();
-                    canvas.width = 800; // Defina a largura desejada
-                    canvas.height = img.height * (800 / img.width); // Mantém a proporção
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            Array.from(files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const pica = new Pica();
+                        canvas.width = 800; // Defina a largura desejada
+                        canvas.height = img.height * (800 / img.width); // Mantém a proporção
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-                    pica.toBlob(canvas, 'image/jpeg', 0.8) // 0.8 = qualidade
-                        .then(function (blob) {
-                            // Crie um FormData para o upload
-                            const formData = new FormData();
-                            formData.append('image', blob, file.name);
+                        pica.toBlob(canvas, 'image/jpeg', 0.8) // 0.8 = qualidade
+                            .then(function(blob) {
+                                formData.append('imagens[]', blob, file.name); // Adiciona a imagem comprimida ao FormData
 
-                            // Envie o FormData para o servidor
-                            fetch('upload.php', {
-                                method: 'POST',
-                                body: formData
-                            }).then(response => response.text())
-                            .then(result => console.log(result));
-                        });
+                                // Se todos os arquivos foram processados, envie o FormData
+                                if (formData.has('imagens[]')) {
+                                    fetch('admin.php', {
+                                        method: 'POST',
+                                        body: formData
+                                    }).then(response => response.text())
+                                    .then(result => console.log(result));
+                                }
+                            });
+                    };
+                    img.src = e.target.result;
                 };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
+                reader.readAsDataURL(file);
+            });
         });
     </script>
 </body>
