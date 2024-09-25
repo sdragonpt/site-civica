@@ -38,6 +38,14 @@ function get_produtos($search = '', $sort_by = 'recent', $categoria_id = null) {
     return $conn->query($sql);
 }
 
+// Defina o tamanho máximo desejado para a descrição
+$max_tamanho = 100; // ajuste o número conforme necessário
+
+// Trunca a descrição se ela exceder o tamanho máximo
+if (strlen($produto_descricao) > $max_tamanho) {
+    $produto_descricao = substr($produto_descricao, 0, $max_tamanho) . '...';
+}
+
 // Processar filtros e ordenação
 $search = isset($_GET['search']) ? $_GET['search'] : '';
 $sort_by = isset($_GET['sort']) ? $_GET['sort'] : 'recent';
