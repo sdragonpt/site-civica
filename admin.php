@@ -9,23 +9,55 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 
 include 'config.php'; // Inclui a configuração de conexão com o banco de dados
 
-// Função para compressão de imagens
-function compress_image($source, $destination, $quality = 50) {
-    $info = getimagesize($source);
-
-    if ($info['mime'] == 'image/jpeg' || $info['mime'] == 'image/jpg') {
-        $image = imagecreatefromjpeg($source);
-        imagejpeg($image, $destination, $quality); // Ajuste a qualidade (0 a 100)
-    } elseif ($info['mime'] == 'image/gif') {
-        $image = imagecreatefromgif($source);
-        imagegif($image, $destination);
-    } elseif ($info['mime'] == 'image/png') {
-        $image = imagecreatefrompng($source);
-        imagepng($image, $destination, 6); // 6 é um bom compromisso entre qualidade e tamanho
+// Função para redimensionar e compactar a imagem
+function resize_and_compress_image($source_path, $target_path, $max_width = 800, $max_height = 600, $quality = 75) {
+    list($width, $height, $type) = getimagesize($source_path);
+    $ratio = $width / $height;
+    
+    if ($width > $height) {
+        $new_width = min($max_width, $width);
+        $new_height = $new_width / $ratio;
+    } else {
+        $new_height = min($max_height, $height);
+        $new_width = $new_height * $ratio;
     }
 
-    // Libera a memória
+    $image_p = imagecreatetruecolor($new_width, $new_height);
+    
+    switch ($type) {
+        case IMAGETYPE_JPEG:
+            $image = imagecreatefromjpeg($source_path);
+            break;
+        case IMAGETYPE_PNG:
+            $image = imagecreatefrompng($source_path);
+            imagealphablending($image_p, false);
+            imagesavealpha($image_p, true);
+            break;
+        case IMAGETYPE_GIF:
+            $image = imagecreatefromgif($source_path);
+            break;
+        default:
+            return false;
+    }
+
+    imagecopyresampled($image_p, $image, 0, 0, 0, 0, $new_width, $new_height, $width, $height);
+
+    switch ($type) {
+        case IMAGETYPE_JPEG:
+            imagejpeg($image_p, $target_path, $quality);
+            break;
+        case IMAGETYPE_PNG:
+            imagepng($image_p, $target_path, 6); // PNG compression level
+            break;
+        case IMAGETYPE_GIF:
+            imagegif($image_p, $target_path);
+            break;
+    }
+
     imagedestroy($image);
+    imagedestroy($image_p);
+
+    return true;
 }
 
 // Funções para carregar imagens e categorias associadas ao produto
@@ -71,7 +103,6 @@ if (isset($_POST['add'])) {
         $produto_id = $stmt->insert_id;
         $stmt->close();
 
-        // Inserir categorias associadas
         if (isset($_POST['categorias']) && is_array($_POST['categorias'])) {
             foreach ($_POST['categorias'] as $categoria_id) {
                 $stmt = $conn->prepare("INSERT INTO produto_categoria (produto_id, categoria_id) VALUES (?, ?)");
@@ -81,29 +112,31 @@ if (isset($_POST['add'])) {
             }
         }
 
-        // Processar imagens
-        if (isset($_FILES['imagens']) && is_array($_FILES['imagens']['name'])) {
+        if (isset($_FILES['imagens']) && $_FILES['imagens']['error'][0] == UPLOAD_ERR_OK) {
             $target_dir = "images/";
             foreach ($_FILES['imagens']['name'] as $key => $name) {
+                $target_file = $target_dir . basename($name);
                 $temp_file = $_FILES['imagens']['tmp_name'][$key];
-                $imageFileType = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+                $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
 
-                // Gerar um nome único para a imagem
                 $unique_name = uniqid() . '.' . $imageFileType;
                 $target_file = $target_dir . $unique_name;
 
                 $check = getimagesize($temp_file);
                 if ($check !== false) {
-                    // Chama a função de compressão para cada imagem
-                    compress_image($temp_file, $target_file, 50); // Ajuste a qualidade conforme necessário
-                    
-                    // Insere o caminho da imagem na base de dados
-                    $stmt = $conn->prepare("INSERT INTO imagens (produto_id, imagem) VALUES (?, ?)");
-                    $stmt->bind_param("is", $produto_id, $unique_name);
-                    if (!$stmt->execute()) {
-                        $mensagem = "<div class='alert alert-danger'>Erro ao adicionar a imagem: " . htmlspecialchars($stmt->error) . "</div>";
+                    $unique_name = uniqid() . '.' . $imageFileType;
+                    $target_file = $target_dir . $unique_name;
+
+                    if (resize_and_compress_image($temp_file, $target_file)) {
+                        $stmt = $conn->prepare("INSERT INTO imagens (produto_id, imagem) VALUES (?, ?)");
+                        $stmt->bind_param("is", $produto_id, $unique_name);
+                        if (!$stmt->execute()) {
+                            $mensagem = "<div class='alert alert-danger'>Erro ao adicionar a imagem: " . htmlspecialchars($stmt->error) . "</div>";
+                        }
+                        $stmt->close();
+                    } else {
+                        $mensagem = "<div class='alert alert-danger'>Desculpe, ocorreu um erro ao redimensionar e comprimir a imagem.</div>";
                     }
-                    $stmt->close();
                 } else {
                     $mensagem = "<div class='alert alert-danger'>O arquivo não é uma imagem.</div>";
                 }
@@ -117,7 +150,6 @@ if (isset($_POST['add'])) {
         $mensagem = "<div class='alert alert-danger'>Erro ao adicionar o produto: " . htmlspecialchars($stmt->error) . "</div>";
     }
 }
-
 
 $stmt = $conn->prepare("SELECT * FROM produtos");
 $stmt->execute();
@@ -172,7 +204,8 @@ if (isset($_GET['logout'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Civica</title>
-    <link rel="stylesheet" href="../css/admin.css">
+    <script src="https://cdn.jsdelivr.net/npm/pica@8.1.1/dist/pica.min.js"></script>
+    <link rel="stylesheet" href="../css/admin.">
 </head>
 <body>
     <div class="admin-container">
@@ -191,7 +224,7 @@ if (isset($_GET['logout'])) {
                 <div><input type="text" name="nome" placeholder="Nome do Produto" required></div>
                 <div><textarea name="descricao" placeholder="Descrição" required></textarea></div>
                 <div><input type="text" name="preco" placeholder="Preço" required></div>
-                <div><input type="file" name="imagens[]" id="upload" multiple required></div>
+                <div><input type="file" name="imagens[]" id="upload" multiple></div>
                 
                 <!-- Seção de seleção de categorias -->
                 <h3>
@@ -228,43 +261,43 @@ if (isset($_GET['logout'])) {
             </thead>
             <tbody>
                 <?php while ($produto = $produtos->fetch_assoc()): ?>
-                <tr>
-                    <td><?php echo $produto['id']; ?></td>
-                    <td><?php echo htmlspecialchars($produto['nome']); ?></td>
-                    <td><?php echo htmlspecialchars($produto['descricao']); ?></td>
-                    <td><?php echo htmlspecialchars($produto['preco']); ?></td>
-                    <td>
-                        <?php
-                        $categorias = get_categorias($produto['id']);
-                        while ($categoria = $categorias->fetch_assoc()) {
-                            echo htmlspecialchars($categoria['nome']) . "<br>";
-                        }
-                        ?>
-                    </td>
-                    <td>
-                        <?php
-                        $imagens = get_imagens($produto['id']);
-                        while ($imagem = $imagens->fetch_assoc()) {
-                            echo '<img src="images/' . htmlspecialchars($imagem['imagem']) . '" width="50" height="50" style="margin: 2px;">';
-                        }
-                        ?>
-                    </td>
-                    <td>
-                        <form method="post" action="">
-                            <input type="hidden" name="id" value="<?php echo $produto['id']; ?>">
-                            <button type="submit" name="delete">Excluir</button>
-                        </form>
-                    </td>
-                </tr>
+                    <?php
+                    $categorias_produto = get_categorias($produto['id']);
+                    $imagens_produto = get_imagens($produto['id']);
+                    ?>
+                    <tr>
+                        <td><?php echo htmlspecialchars($produto['id']); ?></td>
+                        <td><?php echo htmlspecialchars($produto['nome']); ?></td>
+                        <td><?php echo htmlspecialchars($produto['descricao']); ?></td>
+                        <td><?php echo htmlspecialchars($produto['preco']); ?></td>
+                        <td>
+                            <?php while ($categoria = $categorias_produto->fetch_assoc()): ?>
+                                <?php echo htmlspecialchars($categoria['nome']) . '<br>'; ?>
+                            <?php endwhile; ?>
+                        </td>
+                        <td>
+                            <?php while ($imagem = $imagens_produto->fetch_assoc()): ?>
+                                <img src="images/<?php echo htmlspecialchars($imagem['imagem']); ?>" alt="Imagem" style="width: 50px; height: 50px; object-fit: cover; margin-right: 5px;">
+                            <?php endwhile; ?>
+                        </td>
+                        <td>
+                            <a style="text-decoration: none;" href="editar_produto.php?id=<?php echo htmlspecialchars($produto['id']); ?>" class="edit-button">Editar</a>
+                            <form method="post" action="" style="display: inline;">
+                                <input type="hidden" name="id" value="<?php echo htmlspecialchars($produto['id']); ?>">
+                                <button type="submit" name="delete" class="delete-button">Excluir</button>
+                            </form>
+                        </td>
+                    </tr>
                 <?php endwhile; ?>
             </tbody>
         </table>
         <?php else: ?>
-            <p>Não há produtos cadastrados.</p>
+            <p>Nenhum produto foi encontrado.</p>
         <?php endif; ?>
     </div>
-        <!-- Script para desaparecer a mensagem após 5 segundos -->
-        <script>
+
+    <!-- Script para desaparecer a mensagem após 5 segundos -->
+    <script>
         window.onload = function() {
             var alerts = document.querySelectorAll('.alert');
             alerts.forEach(function(alert) {
@@ -273,6 +306,41 @@ if (isset($_GET['logout'])) {
                 }, 5000);
             });
         };
+    </script>
+    <script>
+        document.getElementById('upload').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    const pica = new Pica();
+                    canvas.width = 800; // Defina a largura desejada
+                    canvas.height = img.height * (800 / img.width); // Mantém a proporção
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                    pica.toBlob(canvas, 'image/jpeg', 0.8) // 0.8 = qualidade
+                        .then(function (blob) {
+                            // Crie um FormData para o upload
+                            const formData = new FormData();
+                            formData.append('image', blob, file.name);
+
+                            // Envie o FormData para o servidor
+                            fetch('upload.php', {
+                                method: 'POST',
+                                body: formData
+                            }).then(response => response.text())
+                            .then(result => console.log(result));
+                        });
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
     </script>
 </body>
 </html>
