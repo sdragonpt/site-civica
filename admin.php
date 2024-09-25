@@ -254,6 +254,69 @@ if (isset($_GET['logout'])) {
                 }, 5000);
             });
         };
+
+        document.getElementById('upload').addEventListener('change', function(event) {
+            const files = event.target.files;
+            const targetDir = 'images/'; // Direcotório para salvar as imagens
+
+            Array.from(files).forEach(file => {
+                const reader = new FileReader();
+
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        
+                        // Define a largura desejada para a imagem
+                        const maxWidth = 800;
+                        const maxHeight = 600;
+                        let width = img.width;
+                        let height = img.height;
+
+                        // Ajusta as dimensões mantendo a proporção
+                        if (width > height) {
+                            if (width > maxWidth) {
+                                height *= maxWidth / width;
+                                width = maxWidth;
+                            }
+                        } else {
+                            if (height > maxHeight) {
+                                width *= maxHeight / height;
+                                height = maxHeight;
+                            }
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+
+                        // Desenha a imagem redimensionada no canvas
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        // Converte o canvas para um blob com compressão
+                        canvas.toBlob(function(blob) {
+                            const formData = new FormData();
+                            formData.append('imagens[]', blob, file.name);
+
+                            // Envie o FormData para o servidor usando fetch
+                            fetch('upload.php', {
+                                method: 'POST',
+                                body: formData
+                            })
+                            .then(response => response.text())
+                            .then(result => {
+                                console.log(result); // Exibe o resultado no console
+                            })
+                            .catch(error => {
+                                console.error('Erro ao enviar a imagem:', error);
+                            });
+                        }, 'image/jpeg', 0.7); // 0.7 é a qualidade da imagem
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        });
     </script>
 </body>
 </html>
