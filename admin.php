@@ -204,7 +204,6 @@ if (isset($_GET['logout'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Civica</title>
-    <script src="https://cdn.jsdelivr.net/npm/pica@8.1.1/dist/pica.min.js"></script>
     <link rel="stylesheet" href="./css/admin.css">
 </head>
 <body>
@@ -329,5 +328,6 @@ if (isset($_GET['logout'])) {
             }
         });
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/pica@8.1.1/dist/pica.min.js"></script>
 </body>
 </html>
