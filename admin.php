@@ -72,7 +72,7 @@ if (isset($_POST['add'])) {
                 $check = getimagesize($temp_file);
                 if ($check !== false) {
                     // Chamar o script Python para redimensionar e comprimir a imagem
-                    $command = "python3 scripts/compress_image.py $temp_file $target_file";
+                    $command = "scripts/compress_image.py $temp_file $target_file";
                     $output = null;
                     $return_var = null;
                     exec($command, $output, $return_var);
