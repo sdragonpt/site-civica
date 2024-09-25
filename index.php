@@ -1,18 +1,50 @@
 <?php
 include('config.php'); // Inclua o arquivo de configuração do banco de dados
-// Verifica se o ID do produto foi passado via GET
-if (isset($_GET['id'])) {
-    $produto_id = intval($_GET['id']);
-    
-    // Obtém as informações do produto
-    $produto_result = $conn->query("SELECT * FROM produtos WHERE id = $produto_id");
-    $produto = $produto_result->fetch_assoc();
-    
-    // Obtém as imagens do produto
-    $imagens_result = $conn->query("SELECT imagem FROM imagens WHERE produto_id = $produto_id");
-}
-?>
 
+// Obter todas as categorias
+$categorias_result = $conn->query("SELECT * FROM categorias");
+
+// Função para obter os produtos com base nos filtros e ordenação
+function get_produtos($search = '', $sort_by = 'recent', $categoria_id = null) {
+    global $conn;
+    $order_by = 'p.id DESC';
+    
+    if ($sort_by === 'name') {
+        $order_by = 'p.nome ASC';
+    } elseif ($sort_by === 'price') {
+        $order_by = 'p.preco ASC';
+    }
+
+    // Modificação na consulta SQL para incluir a tabela produto_categoria
+    $sql = "SELECT p.id, p.nome, p.descricao, p.preco, i.imagem 
+            FROM produtos p
+            LEFT JOIN imagens i ON p.id = i.produto_id
+            LEFT JOIN produto_categoria pc ON p.id = pc.produto_id";
+
+    // Adiciona a condição de busca pelo nome do produto
+    if ($search) {
+        $search = $conn->real_escape_string($search);
+        $sql .= " WHERE p.nome LIKE '%$search%'";
+    }
+
+    // Adiciona a condição de filtragem pela categoria
+    if ($categoria_id) {
+        $categoria_id = intval($categoria_id);
+        $sql .= $search ? " AND pc.categoria_id = $categoria_id" : " WHERE pc.categoria_id = $categoria_id";
+    }
+
+    $sql .= " GROUP BY p.id ORDER BY $order_by";
+
+    return $conn->query($sql);
+}
+
+// Processar filtros e ordenação
+$search = isset($_GET['search']) ? $_GET['search'] : '';
+$sort_by = isset($_GET['sort']) ? $_GET['sort'] : 'recent';
+$categoria_id = isset($_GET['categoria']) ? $_GET['categoria'] : null;
+
+$produtos = get_produtos($search, $sort_by, $categoria_id);
+?>
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
