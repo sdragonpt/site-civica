@@ -10,7 +10,7 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 include 'config.php'; // Inclui a configuração de conexão com o banco de dados
 
 // Função para compressão de imagens
-function compress_image($source, $destination, $quality) {
+function compress_image($source, $destination, $quality = 50) {
     $info = getimagesize($source);
 
     if ($info['mime'] == 'image/jpeg' || $info['mime'] == 'image/jpg') {
