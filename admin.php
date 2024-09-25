@@ -257,7 +257,7 @@ if (isset($_GET['logout'])) {
 
         document.getElementById('upload').addEventListener('change', function(event) {
             const files = event.target.files;
-            const targetDir = 'images/'; // Direcotório para salvar as imagens
+            const targetDir = 'images/';
 
             Array.from(files).forEach(file => {
                 const reader = new FileReader();
@@ -267,10 +267,10 @@ if (isset($_GET['logout'])) {
                     img.onload = function() {
                         const canvas = document.createElement('canvas');
                         const ctx = canvas.getContext('2d');
-                        
-                        // Define a largura desejada para a imagem
-                        const maxWidth = 800;
-                        const maxHeight = 600;
+
+                        // Defina a largura e altura máximas
+                        const maxWidth = 800; // Reduza para um valor menor, se necessário
+                        const maxHeight = 600; // Reduza para um valor menor, se necessário
                         let width = img.width;
                         let height = img.height;
 
@@ -295,6 +295,7 @@ if (isset($_GET['logout'])) {
 
                         // Converte o canvas para um blob com compressão
                         canvas.toBlob(function(blob) {
+                            console.log('Tamanho do arquivo comprimido:', blob.size);
                             const formData = new FormData();
                             formData.append('imagens[]', blob, file.name);
 
@@ -310,7 +311,7 @@ if (isset($_GET['logout'])) {
                             .catch(error => {
                                 console.error('Erro ao enviar a imagem:', error);
                             });
-                        }, 'image/jpeg', 0.7); // 0.7 é a qualidade da imagem
+                        }, 'image/jpeg', 0.5); // Ajuste para 0.5 ou um valor menor
                     };
                     img.src = e.target.result;
                 };
