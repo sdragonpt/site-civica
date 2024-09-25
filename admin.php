@@ -11,51 +11,20 @@ include 'config.php'; // Inclui a configuração de conexão com o banco de dado
 
 // Função para redimensionar e compactar a imagem
 function resize_and_compress_image($source_path, $target_path, $max_width = 800, $max_height = 600, $quality = 75) {
-    list($width, $height, $type) = getimagesize($source_path);
-    $ratio = $width / $height;
-    
-    if ($width > $height) {
-        $new_width = min($max_width, $width);
-        $new_height = $new_width / $ratio;
-    } else {
-        $new_height = min($max_height, $height);
-        $new_width = $new_height * $ratio;
-    }
+    $imagick = new \Imagick($source_path);
 
-    $image_p = imagecreatetruecolor($new_width, $new_height);
-    
-    switch ($type) {
-        case IMAGETYPE_JPEG:
-            $image = imagecreatefromjpeg($source_path);
-            break;
-        case IMAGETYPE_PNG:
-            $image = imagecreatefrompng($source_path);
-            imagealphablending($image_p, false);
-            imagesavealpha($image_p, true);
-            break;
-        case IMAGETYPE_GIF:
-            $image = imagecreatefromgif($source_path);
-            break;
-        default:
-            return false;
-    }
+    // Redimensionar a imagem mantendo a proporção
+    $imagick->resizeImage($max_width, $max_height, Imagick::FILTER_LANCZOS, 1, true);
 
-    imagecopyresampled($image_p, $image, 0, 0, 0, 0, $new_width, $new_height, $width, $height);
+    // Definir qualidade de compressão
+    $imagick->setImageCompressionQuality($quality);
 
-    switch ($type) {
-        case IMAGETYPE_JPEG:
-            imagejpeg($image_p, $target_path, $quality);
-            break;
-        case IMAGETYPE_PNG:
-            imagepng($image_p, $target_path, 6); // PNG compression level
-            break;
-        case IMAGETYPE_GIF:
-            imagegif($image_p, $target_path);
-            break;
-    }
+    // Salvar imagem compactada
+    $imagick->writeImage($target_path);
 
-    imagedestroy($image);
-    imagedestroy($image_p);
+    // Liberar recursos
+    $imagick->clear();
+    $imagick->destroy();
 
     return true;
 }
@@ -205,131 +174,8 @@ if (isset($_GET['logout'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Civica</title>
     <script src="https://cdn.jsdelivr.net/npm/pica@8.1.1/dist/pica.min.js"></script>
-    <style>
-        h1{
-            color: #ffcc00;
-        }
+    <link rel="stylesheet" href="../css/admin.css">
 
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 20px;
-            margin-right: 10%;
-            margin-left: 10%;
-        }
-        .admin-container {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            position: relative;
-        }
-        .logout-button {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            padding: 10px 20px;
-            background-color: #333;
-            border: none;
-            border-radius: 4px;
-            color: #fff;
-            cursor: pointer;
-        }
-        .logout-button:hover {
-            background-color: #cc5200;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-group input, .form-group textarea {
-            width: 100%;
-            max-width: 300px;
-            padding: 8px;
-            margin: 5px 0;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        .form-group button {
-            padding: 10px 20px;
-            background-color: #ff6600;
-            border: none;
-            border-radius: 4px;
-            color: #fff;
-            cursor: pointer;
-        }
-        .form-group button:hover {
-            background-color: #cc5200;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        table, th, td {
-            border: 1px solid #ddd;
-        }
-        th, td {
-            padding: 10px;
-            text-align: left;
-        }
-        th {
-            background-color: #f4f4f4;
-        }
-        .delete-button, .edit-button {
-            padding: 5px 10px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 13px;
-        }
-        .delete-button {
-            background-color: #ff0000;
-            color: #fff;
-        }
-        .delete-button:hover {
-            background-color: #cc0000;
-        }
-        .edit-button {
-            background-color: #ffcc00;
-            color: #fff;
-        }
-        .edit-button:hover {
-            background-color: #cca700;
-        }
-        .category-list {
-            display: flex;
-            flex-wrap: wrap;
-            margin-top: 10px;
-        }
-        .category-list input[type="checkbox"] {
-            margin-right: 10px;
-        }
-
-        /* Estilos para a mensagem de alerta */
-        .alert {
-            padding: 15px;
-            margin-bottom: 20px;
-            border: 1px solid transparent;
-            border-radius: 4px;
-            position: relative;
-            opacity: 1;
-            transition: opacity 0.5s ease-out;
-        }
-        .alert-success {
-            color: #155724;
-            background-color: #d4edda;
-            border-color: #c3e6cb;
-        }
-        .alert-danger {
-            color: #721c24;
-            background-color: #f8d7da;
-            border-color: #f5c6cb;
-        }
-        .alert.fade-out {
-            opacity: 0;
-        }
-    </style>
 </head>
 <body>
     <div class="admin-container">
@@ -432,38 +278,45 @@ if (isset($_GET['logout'])) {
         };
     </script>
     <script>
-        document.getElementById('upload').addEventListener('change', function(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+        document.getElementById('upload').addEventListener('change', async function(event) {
+            const files = event.target.files;
+            const pica = pica();
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = new Image();
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    const pica = new Pica();
-                    canvas.width = 800; // Defina a largura desejada
-                    canvas.height = img.height * (800 / img.width); // Mantém a proporção
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            for (let file of files) {
+                const formData = new FormData();
+                
+                // Faz a compressão da imagem antes do envio (você pode usar Pica para redimensionar também aqui)
+                const image = new Image();
+                image.src = URL.createObjectURL(file);
+                await image.decode();
+                
+                const canvas = document.createElement('canvas');
+                canvas.width = image.width;
+                canvas.height = image.height;
+                
+                const targetCanvas = document.createElement('canvas');
+                targetCanvas.width = 800; // Largura máxima
+                targetCanvas.height = 600; // Altura máxima
+                
+                await pica.resize(image, targetCanvas);
+                const blob = await pica.toBlob(targetCanvas, 'image/jpeg', 0.8); // Reduz a qualidade para acelerar
 
-                    pica.toBlob(canvas, 'image/jpeg', 0.8) // 0.8 = qualidade
-                        .then(function (blob) {
-                            // Crie um FormData para o upload
-                            const formData = new FormData();
-                            formData.append('image', blob, file.name);
+                formData.append('imagens[]', blob, file.name);
 
-                            // Envie o FormData para o servidor
-                            fetch('upload.php', {
-                                method: 'POST',
-                                body: formData
-                            }).then(response => response.text())
-                            .then(result => console.log(result));
-                        });
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
+                // Envio do formulário com AJAX
+                const response = await fetch('upload.php', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                // Verifica o resultado do upload
+                const result = await response.json();
+                if (result.success) {
+                    console.log('Imagem enviada com sucesso');
+                } else {
+                    console.error('Erro ao enviar imagem');
+                }
+            }
         });
     </script>
 </body>
