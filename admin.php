@@ -13,8 +13,7 @@ include 'config.php'; // Inclui a configuração de conexão com o banco de dado
 function resize_and_compress_image($source_path, $target_path, $max_width = 800, $max_height = 600, $quality = 75) {
     list($width, $height, $type) = getimagesize($source_path);
     $ratio = $width / $height;
-
-    // Calcula novas dimensões
+    
     if ($width > $height) {
         $new_width = min($max_width, $width);
         $new_height = $new_width / $ratio;
@@ -23,9 +22,8 @@ function resize_and_compress_image($source_path, $target_path, $max_width = 800,
         $new_width = $new_height * $ratio;
     }
 
-    // Cria nova imagem
     $image_p = imagecreatetruecolor($new_width, $new_height);
-
+    
     switch ($type) {
         case IMAGETYPE_JPEG:
             $image = imagecreatefromjpeg($source_path);
@@ -42,16 +40,14 @@ function resize_and_compress_image($source_path, $target_path, $max_width = 800,
             return false;
     }
 
-    // Redimensiona e copia a imagem
     imagecopyresampled($image_p, $image, 0, 0, 0, 0, $new_width, $new_height, $width, $height);
 
-    // Salva a imagem no formato correto
     switch ($type) {
         case IMAGETYPE_JPEG:
             imagejpeg($image_p, $target_path, $quality);
             break;
         case IMAGETYPE_PNG:
-            imagepng($image_p, $target_path, 6); // Nível de compressão PNG
+            imagepng($image_p, $target_path, 6); // PNG compression level
             break;
         case IMAGETYPE_GIF:
             imagegif($image_p, $target_path);
@@ -64,6 +60,36 @@ function resize_and_compress_image($source_path, $target_path, $max_width = 800,
     return true;
 }
 
+// Funções para carregar imagens e categorias associadas ao produto
+function get_imagens($produto_id) {
+    global $conn;
+    $stmt = $conn->prepare("SELECT * FROM imagens WHERE produto_id = ?");
+    $stmt->bind_param("i", $produto_id);
+    $stmt->execute();
+    return $stmt->get_result();
+}
+
+function get_imagem_principal($produto_id) {
+    global $conn;
+    $stmt = $conn->prepare("SELECT imagem FROM imagens WHERE produto_id = ? ORDER BY id ASC LIMIT 1");
+    $stmt->bind_param("i", $produto_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    return $result->fetch_assoc();
+}
+
+function get_categorias($produto_id) {
+    global $conn;
+    $stmt = $conn->prepare("
+        SELECT c.nome 
+        FROM categorias c 
+        JOIN produto_categoria pc ON c.id = pc.categoria_id 
+        WHERE pc.produto_id = ?");
+    $stmt->bind_param("i", $produto_id);
+    $stmt->execute();
+    return $stmt->get_result();
+}
+
 // Mensagem de sucesso ou erro
 $mensagem = '';
 if (isset($_POST['add'])) {
@@ -71,14 +97,12 @@ if (isset($_POST['add'])) {
     $descricao = $_POST['descricao'];
     $preco = $_POST['preco'];
 
-    // Insere o produto
     $stmt = $conn->prepare("INSERT INTO produtos (nome, descricao, preco) VALUES (?, ?, ?)");
     $stmt->bind_param("ssi", $nome, $descricao, $preco);
     if ($stmt->execute()) {
         $produto_id = $stmt->insert_id;
         $stmt->close();
 
-        // Adiciona categorias
         if (isset($_POST['categorias']) && is_array($_POST['categorias'])) {
             foreach ($_POST['categorias'] as $categoria_id) {
                 $stmt = $conn->prepare("INSERT INTO produto_categoria (produto_id, categoria_id) VALUES (?, ?)");
@@ -88,37 +112,33 @@ if (isset($_POST['add'])) {
             }
         }
 
-        // Processa imagens
-        if (isset($_FILES['imagens']) && count($_FILES['imagens']['name']) > 0) {
+        if (isset($_FILES['imagens']) && $_FILES['imagens']['error'][0] == UPLOAD_ERR_OK) {
             $target_dir = "images/";
-            $totalFiles = count($_FILES['imagens']['name']);
-            for ($i = 0; $i < $totalFiles; $i++) {
-                if ($_FILES['imagens']['error'][$i] == UPLOAD_ERR_OK) {
-                    $temp_file = $_FILES['imagens']['tmp_name'][$i];
-                    $imageFileType = strtolower(pathinfo($_FILES['imagens']['name'][$i], PATHINFO_EXTENSION));
+            foreach ($_FILES['imagens']['name'] as $key => $name) {
+                $target_file = $target_dir . basename($name);
+                $temp_file = $_FILES['imagens']['tmp_name'][$key];
+                $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
+
+                $unique_name = uniqid() . '.' . $imageFileType;
+                $target_file = $target_dir . $unique_name;
+
+                $check = getimagesize($temp_file);
+                if ($check !== false) {
                     $unique_name = uniqid() . '.' . $imageFileType;
                     $target_file = $target_dir . $unique_name;
 
-                    // Verifica se é uma imagem
-                    $check = getimagesize($temp_file);
-                    if ($check !== false) {
-                        // Redimensiona e comprime a imagem
-                        if (resize_and_compress_image($temp_file, $target_file)) {
-                            // Insere a imagem no banco de dados
-                            $stmt = $conn->prepare("INSERT INTO imagens (produto_id, imagem) VALUES (?, ?)");
-                            $stmt->bind_param("is", $produto_id, $unique_name);
-                            if (!$stmt->execute()) {
-                                $mensagem = "<div class='alert alert-danger'>Erro ao adicionar a imagem: " . htmlspecialchars($stmt->error) . "</div>";
-                            }
-                            $stmt->close();
-                        } else {
-                            $mensagem = "<div class='alert alert-danger'>Desculpe, ocorreu um erro ao redimensionar e comprimir a imagem.</div>";
+                    if (resize_and_compress_image($temp_file, $target_file)) {
+                        $stmt = $conn->prepare("INSERT INTO imagens (produto_id, imagem) VALUES (?, ?)");
+                        $stmt->bind_param("is", $produto_id, $unique_name);
+                        if (!$stmt->execute()) {
+                            $mensagem = "<div class='alert alert-danger'>Erro ao adicionar a imagem: " . htmlspecialchars($stmt->error) . "</div>";
                         }
+                        $stmt->close();
                     } else {
-                        $mensagem = "<div class='alert alert-danger'>O arquivo não é uma imagem.</div>";
+                        $mensagem = "<div class='alert alert-danger'>Desculpe, ocorreu um erro ao redimensionar e comprimir a imagem.</div>";
                     }
                 } else {
-                    $mensagem = "<div class='alert alert-danger'>Erro ao carregar a imagem.</div>";
+                    $mensagem = "<div class='alert alert-danger'>O arquivo não é uma imagem.</div>";
                 }
             }
         }
@@ -131,7 +151,6 @@ if (isset($_POST['add'])) {
     }
 }
 
-// Lista produtos
 $stmt = $conn->prepare("SELECT * FROM produtos");
 $stmt->execute();
 $produtos = $stmt->get_result();
@@ -139,10 +158,8 @@ $stmt->close();
 
 $tem_produtos = ($produtos->num_rows > 0);
 
-// Obtém categorias
 $categorias_result = $conn->query("SELECT * FROM categorias");
 
-// Processa a eliminação de produtos
 if (isset($_POST['delete'])) {
     $produto_id = $_POST['id'];
 
@@ -172,13 +189,13 @@ if (isset($_POST['delete'])) {
     exit();
 }
 
-// Logout
 if (isset($_GET['logout'])) {
     session_unset();
     session_destroy();
     header("Location: login.php");
     exit();
 }
+
 ?>
 
 <!DOCTYPE html>
@@ -203,39 +220,91 @@ if (isset($_GET['logout'])) {
         <h2>Adicionar Produto</h2>
         <form method="post" action="" enctype="multipart/form-data">
             <div class="form-group">
-                <input type="text" name="nome" placeholder="Nome do Produto" required>
-                <textarea name="descricao" placeholder="Descrição" required></textarea>
-                <input type="text" name="preco" placeholder="Preço" required>
-                <input type="file" name="imagens[]" multiple required>
-                <button type="submit" name="add">Adicionar Produto</button>
+                <div><input type="text" name="nome" placeholder="Nome do Produto" required></div>
+                <div><textarea name="descricao" placeholder="Descrição" required></textarea></div>
+                <div><input type="text" name="preco" placeholder="Preço" required></div>
+                <div><input type="file" name="imagens[]" id="upload" multiple></div>
+                
+                <!-- Seção de seleção de categorias -->
+                <h3>
+                    Selecionar Categorias
+                    <a href="gerenciar_categorias.php" style="margin-left: 10px; text-decoration: none; color: #007bff; font-size: 14px;">Gerenciar Categorias</a>
+                </h3>
+                <div class="category-list">
+                    <?php while ($categoria = $categorias_result->fetch_assoc()): ?>
+                        <label style="border: 1px solid; border-radius: 3px; padding: 4px; font-size: 14px; margin-right: 6px">
+                            <div style="width: 13px; margin: 0px; float: left;"><input type="checkbox" name="categorias[]" value="<?php echo $categoria['id']; ?>"></div>
+                            <div style="float: left; margin-top: 3px; margin-left: 5px;"><?php echo htmlspecialchars($categoria['nome']); ?></div>
+                        </label>
+                    <?php endwhile; ?>
+                </div>
             </div>
+            <button type="submit" name="add">Adicionar Produto</button>
         </form>
 
-        <h2>Lista de Produtos</h2>
+        <!-- Verifica se há produtos -->
         <?php if ($tem_produtos): ?>
-            <table>
+        <!-- Lista de produtos -->
+        <h2>Produtos</h2>
+        <table>
+            <thead>
                 <tr>
+                    <th>ID</th>
                     <th>Nome</th>
+                    <th>Descrição</th>
                     <th>Preço</th>
+                    <th>Categorias</th>
+                    <th>Imagens</th>
                     <th>Ações</th>
                 </tr>
+            </thead>
+            <tbody>
                 <?php while ($produto = $produtos->fetch_assoc()): ?>
+                    <?php
+                    $categorias_produto = get_categorias($produto['id']);
+                    $imagens_produto = get_imagens($produto['id']);
+                    ?>
                     <tr>
+                        <td><?php echo htmlspecialchars($produto['id']); ?></td>
                         <td><?php echo htmlspecialchars($produto['nome']); ?></td>
-                        <td><?php echo htmlspecialchars($produto['preco']); ?> €</td>
+                        <td><?php echo htmlspecialchars($produto['descricao']); ?></td>
+                        <td><?php echo htmlspecialchars($produto['preco']); ?></td>
                         <td>
-                            <form method="post" action="">
-                                <input type="hidden" name="id" value="<?php echo $produto['id']; ?>">
-                                <button type="submit" name="delete">Eliminar</button>
-                                <button type="button" onclick="window.location.href='edit_product.php?id=<?php echo $produto['id']; ?>'">Editar</button>
+                            <?php while ($categoria = $categorias_produto->fetch_assoc()): ?>
+                                <?php echo htmlspecialchars($categoria['nome']) . '<br>'; ?>
+                            <?php endwhile; ?>
+                        </td>
+                        <td>
+                            <?php while ($imagem = $imagens_produto->fetch_assoc()): ?>
+                                <img src="images/<?php echo htmlspecialchars($imagem['imagem']); ?>" alt="Imagem" style="width: 50px; height: 50px; object-fit: cover; margin-right: 5px;">
+                            <?php endwhile; ?>
+                        </td>
+                        <td>
+                            <a style="text-decoration: none;" href="editar_produto.php?id=<?php echo htmlspecialchars($produto['id']); ?>" class="edit-button">Editar</a>
+                            <form method="post" action="" style="display: inline;">
+                                <input type="hidden" name="id" value="<?php echo htmlspecialchars($produto['id']); ?>">
+                                <button type="submit" name="delete" class="delete-button">Excluir</button>
                             </form>
                         </td>
                     </tr>
                 <?php endwhile; ?>
-            </table>
+            </tbody>
+        </table>
         <?php else: ?>
-            <p>Não há produtos cadastrados.</p>
+            <p>Nenhum produto foi encontrado.</p>
         <?php endif; ?>
     </div>
+
+    <!-- Script para desaparecer a mensagem após 5 segundos -->
+    <script>
+        window.onload = function() {
+            var alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                setTimeout(function() {
+                    alert.classList.add('fade-out');
+                }, 5000);
+            });
+        };
+    </script>
 </body>
 </html>
