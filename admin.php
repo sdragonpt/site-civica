@@ -209,6 +209,8 @@ if (isset($_GET['logout'])) {
 <body>
     <div class="admin-container">
         <button class="logout-button" onclick="window.location.href='admin.php?logout=true'">Logout</button>
+        <button class="main-page-button" onclick="window.location.href='index.php'">Página Principal</button>
+        <button class="compress-button" onclick="window.location.href='compress.php'">Compressão</button>
         <h1>Admin - Civica</h1>
 
         <!-- Exibe a mensagem se existir -->
