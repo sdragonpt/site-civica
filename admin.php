@@ -18,15 +18,6 @@ function get_imagens($produto_id) {
     return $stmt->get_result();
 }
 
-function get_imagem_principal($produto_id) {
-    global $conn;
-    $stmt = $conn->prepare("SELECT imagem FROM imagens WHERE produto_id = ? ORDER BY id ASC LIMIT 1");
-    $stmt->bind_param("i", $produto_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    return $result->fetch_assoc();
-}
-
 function get_categorias($produto_id) {
     global $conn;
     $stmt = $conn->prepare("
@@ -66,26 +57,24 @@ if (isset($_POST['add'])) {
             foreach ($_FILES['imagens']['name'] as $key => $name) {
                 $target_file = $target_dir . basename($name);
                 $temp_file = $_FILES['imagens']['tmp_name'][$key];
-                $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
 
-                $unique_name = uniqid() . '.' . $imageFileType;
-                $target_file = $target_dir . $unique_name;
-
-                $check = getimagesize($temp_file);
-                if ($check !== false) {
-                    $unique_name = uniqid() . '.' . $imageFileType;
+                // Verifica se é uma imagem
+                if (getimagesize($temp_file) !== false) {
+                    $unique_name = uniqid() . '-' . basename($name);
                     $target_file = $target_dir . $unique_name;
 
-                    if (move_uploaded_file($temp_file, $target_file)) {
-                        $stmt = $conn->prepare("INSERT INTO imagens (produto_id, imagem) VALUES (?, ?)");
-                        $stmt->bind_param("is", $produto_id, $unique_name);
-                        if (!$stmt->execute()) {
-                            $mensagem = "<div class='alert alert-danger'>Erro ao adicionar a imagem: " . htmlspecialchars($stmt->error) . "</div>";
-                        }
-                        $stmt->close();
-                    } else {
-                        $mensagem = "<div class='alert alert-danger'>Desculpe, ocorreu um erro ao enviar a imagem.</div>";
+                    // Mova o arquivo para o diretório de destino
+                    move_uploaded_file($temp_file, $target_file);
+
+                    // Compressão da imagem
+                    compress_image($target_file, $target_file, 75); // 75 é a qualidade JPEG
+
+                    $stmt = $conn->prepare("INSERT INTO imagens (produto_id, imagem) VALUES (?, ?)");
+                    $stmt->bind_param("is", $produto_id, $unique_name);
+                    if (!$stmt->execute()) {
+                        $mensagem = "<div class='alert alert-danger'>Erro ao adicionar a imagem: " . htmlspecialchars($stmt->error) . "</div>";
                     }
+                    $stmt->close();
                 } else {
                     $mensagem = "<div class='alert alert-danger'>O arquivo não é uma imagem.</div>";
                 }
@@ -98,6 +87,26 @@ if (isset($_POST['add'])) {
     } else {
         $mensagem = "<div class='alert alert-danger'>Erro ao adicionar o produto: " . htmlspecialchars($stmt->error) . "</div>";
     }
+}
+
+// Função para compressão de imagens
+function compress_image($source, $destination, $quality) {
+    $info = getimagesize($source);
+
+    if ($info['mime'] == 'image/jpeg' || $info['mime'] == 'image/jpg') {
+        $image = imagecreatefromjpeg($source);
+        imagejpeg($image, $destination, $quality); // 75 é a qualidade (0 a 100)
+    } elseif ($info['mime'] == 'image/gif') {
+        $image = imagecreatefromgif($source);
+        imagegif($image, $destination);
+    } elseif ($info['mime'] == 'image/png') {
+        $image = imagecreatefrompng($source);
+        // A qualidade do PNG é de 0 (sem compressão) a 9 (compressão máxima)
+        imagepng($image, $destination, 6); // 6 é um bom compromisso entre qualidade e tamanho
+    }
+
+    // Libera a memória
+    imagedestroy($image);
 }
 
 $stmt = $conn->prepare("SELECT * FROM produtos");
@@ -172,7 +181,7 @@ if (isset($_GET['logout'])) {
                 <div><input type="text" name="nome" placeholder="Nome do Produto" required></div>
                 <div><textarea name="descricao" placeholder="Descrição" required></textarea></div>
                 <div><input type="text" name="preco" placeholder="Preço" required></div>
-                <div><input type="file" name="imagens[]" id="upload" multiple></div>
+                <div><input type="file" name="imagens[]" id="upload" multiple required></div>
                 
                 <!-- Seção de seleção de categorias -->
                 <h3>
@@ -209,43 +218,43 @@ if (isset($_GET['logout'])) {
             </thead>
             <tbody>
                 <?php while ($produto = $produtos->fetch_assoc()): ?>
-                    <?php
-                    $categorias_produto = get_categorias($produto['id']);
-                    $imagens_produto = get_imagens($produto['id']);
-                    ?>
-                    <tr>
-                        <td><?php echo htmlspecialchars($produto['id']); ?></td>
-                        <td><?php echo htmlspecialchars($produto['nome']); ?></td>
-                        <td><?php echo htmlspecialchars($produto['descricao']); ?></td>
-                        <td><?php echo htmlspecialchars($produto['preco']); ?></td>
-                        <td>
-                            <?php while ($categoria = $categorias_produto->fetch_assoc()): ?>
-                                <?php echo htmlspecialchars($categoria['nome']) . '<br>'; ?>
-                            <?php endwhile; ?>
-                        </td>
-                        <td>
-                            <?php while ($imagem = $imagens_produto->fetch_assoc()): ?>
-                                <img src="images/<?php echo htmlspecialchars($imagem['imagem']); ?>" alt="Imagem" style="width: 50px; height: 50px; object-fit: cover; margin-right: 5px;">
-                            <?php endwhile; ?>
-                        </td>
-                        <td>
-                            <a style="text-decoration: none;" href="editar_produto.php?id=<?php echo htmlspecialchars($produto['id']); ?>" class="edit-button">Editar</a>
-                            <form method="post" action="" style="display: inline;">
-                                <input type="hidden" name="id" value="<?php echo htmlspecialchars($produto['id']); ?>">
-                                <button type="submit" name="delete" class="delete-button">Excluir</button>
-                            </form>
-                        </td>
-                    </tr>
+                <tr>
+                    <td><?php echo $produto['id']; ?></td>
+                    <td><?php echo htmlspecialchars($produto['nome']); ?></td>
+                    <td><?php echo htmlspecialchars($produto['descricao']); ?></td>
+                    <td><?php echo htmlspecialchars($produto['preco']); ?></td>
+                    <td>
+                        <?php
+                        $categorias = get_categorias($produto['id']);
+                        while ($categoria = $categorias->fetch_assoc()) {
+                            echo htmlspecialchars($categoria['nome']) . "<br>";
+                        }
+                        ?>
+                    </td>
+                    <td>
+                        <?php
+                        $imagens = get_imagens($produto['id']);
+                        while ($imagem = $imagens->fetch_assoc()) {
+                            echo '<img src="images/' . htmlspecialchars($imagem['imagem']) . '" width="50" height="50" style="margin: 2px;">';
+                        }
+                        ?>
+                    </td>
+                    <td>
+                        <form method="post" action="">
+                            <input type="hidden" name="id" value="<?php echo $produto['id']; ?>">
+                            <button type="submit" name="delete">Excluir</button>
+                        </form>
+                    </td>
+                </tr>
                 <?php endwhile; ?>
             </tbody>
         </table>
         <?php else: ?>
-            <p>Nenhum produto foi encontrado.</p>
+            <p>Não há produtos cadastrados.</p>
         <?php endif; ?>
     </div>
-
-    <!-- Script para desaparecer a mensagem após 5 segundos -->
-    <script>
+        <!-- Script para desaparecer a mensagem após 5 segundos -->
+        <script>
         window.onload = function() {
             var alerts = document.querySelectorAll('.alert');
             alerts.forEach(function(alert) {
@@ -254,70 +263,6 @@ if (isset($_GET['logout'])) {
                 }, 5000);
             });
         };
-
-        document.getElementById('upload').addEventListener('change', function(event) {
-            const files = event.target.files;
-            const targetDir = 'images/';
-
-            Array.from(files).forEach(file => {
-                const reader = new FileReader();
-
-                reader.onload = function(e) {
-                    const img = new Image();
-                    img.onload = function() {
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
-
-                        // Defina a largura e altura máximas
-                        const maxWidth = 800; // Reduza para um valor menor, se necessário
-                        const maxHeight = 600; // Reduza para um valor menor, se necessário
-                        let width = img.width;
-                        let height = img.height;
-
-                        // Ajusta as dimensões mantendo a proporção
-                        if (width > height) {
-                            if (width > maxWidth) {
-                                height *= maxWidth / width;
-                                width = maxWidth;
-                            }
-                        } else {
-                            if (height > maxHeight) {
-                                width *= maxHeight / height;
-                                height = maxHeight;
-                            }
-                        }
-
-                        canvas.width = width;
-                        canvas.height = height;
-
-                        // Desenha a imagem redimensionada no canvas
-                        ctx.drawImage(img, 0, 0, width, height);
-
-                        // Converte o canvas para um blob com compressão
-                        canvas.toBlob(function(blob) {
-                            console.log('Tamanho do arquivo comprimido:', blob.size);
-                            const formData = new FormData();
-                            formData.append('imagens[]', blob, file.name);
-
-                            // Envie o FormData para o servidor usando fetch
-                            fetch('upload.php', {
-                                method: 'POST',
-                                body: formData
-                            })
-                            .then(response => response.text())
-                            .then(result => {
-                                console.log(result); // Exibe o resultado no console
-                            })
-                            .catch(error => {
-                                console.error('Erro ao enviar a imagem:', error);
-                            });
-                        }, 'image/jpeg', 0.5); // Ajuste para 0.5 ou um valor menor
-                    };
-                    img.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
-            });
-        });
     </script>
 </body>
 </html>
