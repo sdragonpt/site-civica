@@ -204,7 +204,6 @@ if (isset($_GET['logout'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Civica</title>
-    <script src="https://cdn.jsdelivr.net/npm/pica@8.1.1/dist/pica.min.js"></script>
     <link rel="stylesheet" href="./css/admin.css">
 </head>
 <body>
@@ -306,41 +305,6 @@ if (isset($_GET['logout'])) {
                 }, 5000);
             });
         };
-    </script>
-    <script>
-        document.getElementById('upload').addEventListener('change', function(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = new Image();
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    const pica = new Pica();
-                    canvas.width = 800; // Defina a largura desejada
-                    canvas.height = img.height * (800 / img.width); // Mantém a proporção
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-                    pica.toBlob(canvas, 'image/jpeg', 0.8) // 0.8 = qualidade
-                        .then(function (blob) {
-                            // Crie um FormData para o upload
-                            const formData = new FormData();
-                            formData.append('image', blob, file.name);
-
-                            // Envie o FormData para o servidor
-                            fetch('upload.php', {
-                                method: 'POST',
-                                body: formData
-                            }).then(response => response.text())
-                            .then(result => console.log(result));
-                        });
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        });
     </script>
 </body>
 </html>
