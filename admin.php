@@ -61,19 +61,25 @@ if (isset($_POST['add'])) {
             }
         }
 
-        // Aqui não é mais necessário redimensionar e comprimir as imagens
         if (isset($_FILES['imagens'])) {
             $target_dir = "images/";
             foreach ($_FILES['imagens']['name'] as $key => $name) {
                 $imageFileType = strtolower(pathinfo($name, PATHINFO_EXTENSION));
                 $unique_name = uniqid() . '.' . $imageFileType;
                 $target_file = $target_dir . $unique_name;
-
+        
                 // Insere a imagem no banco de dados diretamente
                 $stmt = $conn->prepare("INSERT INTO imagens (produto_id, imagem) VALUES (?, ?)");
                 $stmt->bind_param("is", $produto_id, $unique_name);
                 if (!$stmt->execute()) {
                     $mensagem = "<div class='alert alert-danger'>Erro ao adicionar a imagem: " . htmlspecialchars($stmt->error) . "</div>";
+                } else {
+                    // Move o arquivo enviado para o diretório de imagens
+                    if (move_uploaded_file($_FILES['imagens']['tmp_name'][$key], $target_file)) {
+                        // O arquivo foi movido com sucesso
+                    } else {
+                        $mensagem = "<div class='alert alert-danger'>Erro ao mover a imagem para o diretório: " . htmlspecialchars($name) . "</div>";
+                    }
                 }
                 $stmt->close();
             }
@@ -249,6 +255,7 @@ if (isset($_GET['logout'])) {
         document.getElementById('upload').addEventListener('change', function(event) {
             const files = event.target.files;
             const formData = new FormData();
+            let filesProcessed = 0; // Contador para saber quantos arquivos foram processados
 
             Array.from(files).forEach(file => {
                 const reader = new FileReader();
@@ -265,14 +272,23 @@ if (isset($_GET['logout'])) {
                         pica.toBlob(canvas, 'image/jpeg', 0.8) // 0.8 = qualidade
                             .then(function(blob) {
                                 formData.append('imagens[]', blob, file.name); // Adiciona a imagem comprimida ao FormData
+                                filesProcessed++; // Incrementa o contador
 
                                 // Se todos os arquivos foram processados, envie o FormData
-                                if (formData.has('imagens[]')) {
+                                if (filesProcessed === files.length) {
                                     fetch('admin.php', {
                                         method: 'POST',
                                         body: formData
                                     }).then(response => response.text())
-                                    .then(result => console.log(result));
+                                    .then(result => {
+                                        console.log(result);
+                                        // Se desejar, adicione uma mensagem de sucesso aqui
+                                        alert('Imagens enviadas com sucesso!'); // Feedback ao usuário
+                                    })
+                                    .catch(error => {
+                                        console.error('Erro ao enviar as imagens:', error);
+                                        alert('Erro ao enviar as imagens.'); // Feedback ao usuário
+                                    });
                                 }
                             });
                     };
