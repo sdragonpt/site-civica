@@ -77,6 +77,10 @@ if (isset($_POST['add'])) {
                     $return_var = null;
                     exec($command, $output, $return_var);
 
+                    if ($return_var !== 0) {
+                        $mensagem = "<div class='alert alert-danger'>Desculpe, ocorreu um erro com Python.<br>Erro: " . implode("<br>", $output) . "</div>";
+                    }
+
                     // Verifica se o comando foi executado corretamente
                     if ($return_var === 0) {
                         $stmt = $conn->prepare("INSERT INTO imagens (produto_id, imagem) VALUES (?, ?)");
