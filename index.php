@@ -8,31 +8,33 @@ $categorias_result = $conn->query("SELECT * FROM categorias");
 function get_produtos($search = '', $sort_by = 'recent', $categoria_id = null) {
     global $conn;
     $order_by = 'p.id DESC';
+    
     if ($sort_by === 'name') {
         $order_by = 'p.nome ASC';
     } elseif ($sort_by === 'price') {
         $order_by = 'p.preco ASC';
     }
 
-    $sql = "SELECT p.id, p.nome, p.descricao, p.preco, i.imagem, GROUP_CONCAT(c.nome SEPARATOR ', ') AS categorias 
+    // Modificação na consulta SQL para incluir a tabela produto_categoria
+    $sql = "SELECT p.id, p.nome, p.descricao, p.preco, i.imagem 
             FROM produtos p
             LEFT JOIN imagens i ON p.id = i.produto_id
-            LEFT JOIN produto_categoria pc ON p.id = pc.produto_id
-            LEFT JOIN categorias c ON pc.categoria_id = c.id
-            WHERE i.imagem IS NOT NULL";
-    
+            LEFT JOIN produto_categoria pc ON p.id = pc.produto_id";
+
+    // Adiciona a condição de busca pelo nome do produto
     if ($search) {
         $search = $conn->real_escape_string($search);
-        $sql .= " AND p.nome LIKE '%$search%'";
+        $sql .= " WHERE p.nome LIKE '%$search%'";
     }
-    
+
+    // Adiciona a condição de filtragem pela categoria
     if ($categoria_id) {
         $categoria_id = intval($categoria_id);
-        $sql .= " AND p.categoria_id = $categoria_id";
+        $sql .= $search ? " AND pc.categoria_id = $categoria_id" : " WHERE pc.categoria_id = $categoria_id";
     }
-    
+
     $sql .= " GROUP BY p.id ORDER BY $order_by";
-    
+
     return $conn->query($sql);
 }
 
