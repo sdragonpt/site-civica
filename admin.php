@@ -9,6 +9,57 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 
 include 'config.php'; // Inclui a configuração de conexão com o banco de dados
 
+// Função para redimensionar e compactar a imagem
+function resize_and_compress_image($source_path, $target_path, $max_width = 800, $max_height = 600, $quality = 75) {
+    list($width, $height, $type) = getimagesize($source_path);
+    $ratio = $width / $height;
+    
+    if ($width > $height) {
+        $new_width = min($max_width, $width);
+        $new_height = $new_width / $ratio;
+    } else {
+        $new_height = min($max_height, $height);
+        $new_width = $new_height * $ratio;
+    }
+
+    $image_p = imagecreatetruecolor($new_width, $new_height);
+    
+    switch ($type) {
+        case IMAGETYPE_JPEG:
+            $image = imagecreatefromjpeg($source_path);
+            break;
+        case IMAGETYPE_PNG:
+            $image = imagecreatefrompng($source_path);
+            imagealphablending($image_p, false);
+            imagesavealpha($image_p, true);
+            break;
+        case IMAGETYPE_GIF:
+            $image = imagecreatefromgif($source_path);
+            break;
+        default:
+            return false;
+    }
+
+    imagecopyresampled($image_p, $image, 0, 0, 0, 0, $new_width, $new_height, $width, $height);
+
+    switch ($type) {
+        case IMAGETYPE_JPEG:
+            imagejpeg($image_p, $target_path, $quality);
+            break;
+        case IMAGETYPE_PNG:
+            imagepng($image_p, $target_path, 6); // PNG compression level
+            break;
+        case IMAGETYPE_GIF:
+            imagegif($image_p, $target_path);
+            break;
+    }
+
+    imagedestroy($image);
+    imagedestroy($image_p);
+
+    return true;
+}
+
 // Funções para carregar imagens e categorias associadas ao produto
 function get_imagens($produto_id) {
     global $conn;
@@ -168,13 +219,13 @@ if (isset($_GET['logout'])) {
 
         <!-- Formulário para adicionar produto -->
         <h2>Adicionar Produto</h2>
-        <form id="produto-form" method="post" action="" enctype="multipart/form-data">
+        <form method="post" action="" enctype="multipart/form-data">
             <div class="form-group">
                 <div><input type="text" name="nome" placeholder="Nome do Produto" required></div>
                 <div><textarea name="descricao" placeholder="Descrição" required></textarea></div>
                 <div><input type="text" name="preco" placeholder="Preço" required></div>
-                <div><input type="file" name="imagens[]" id="upload" multiple required></div>
-
+                <div><input type="file" name="imagens[]" id="upload" multiple></div>
+                
                 <!-- Seção de seleção de categorias -->
                 <h3>
                     Selecionar Categorias
@@ -189,60 +240,61 @@ if (isset($_GET['logout'])) {
                     <?php endwhile; ?>
                 </div>
             </div>
-            <button type="button" onclick="compressAndUpload()">Adicionar Produto</button>
+            <button type="submit" name="add">Adicionar Produto</button>
         </form>
+
+        <!-- Verifica se há produtos -->
+        <?php if ($tem_produtos): ?>
+        <!-- Lista de produtos -->
+        <h2>Produtos</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nome</th>
+                    <th>Descrição</th>
+                    <th>Preço</th>
+                    <th>Categorias</th>
+                    <th>Imagens</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php while ($produto = $produtos->fetch_assoc()): ?>
+                    <?php
+                    $categorias_produto = get_categorias($produto['id']);
+                    $imagens_produto = get_imagens($produto['id']);
+                    ?>
+                    <tr>
+                        <td><?php echo htmlspecialchars($produto['id']); ?></td>
+                        <td><?php echo htmlspecialchars($produto['nome']); ?></td>
+                        <td><?php echo htmlspecialchars($produto['descricao']); ?></td>
+                        <td><?php echo htmlspecialchars($produto['preco']); ?></td>
+                        <td>
+                            <?php while ($categoria = $categorias_produto->fetch_assoc()): ?>
+                                <?php echo htmlspecialchars($categoria['nome']) . '<br>'; ?>
+                            <?php endwhile; ?>
+                        </td>
+                        <td>
+                            <?php while ($imagem = $imagens_produto->fetch_assoc()): ?>
+                                <img src="images/<?php echo htmlspecialchars($imagem['imagem']); ?>" alt="Imagem" style="width: 50px; height: 50px; object-fit: cover; margin-right: 5px;">
+                            <?php endwhile; ?>
+                        </td>
+                        <td>
+                            <a style="text-decoration: none;" href="editar_produto.php?id=<?php echo htmlspecialchars($produto['id']); ?>" class="edit-button">Editar</a>
+                            <form method="post" action="" style="display: inline;">
+                                <input type="hidden" name="id" value="<?php echo htmlspecialchars($produto['id']); ?>">
+                                <button type="submit" name="delete" class="delete-button">Excluir</button>
+                            </form>
+                        </td>
+                    </tr>
+                <?php endwhile; ?>
+            </tbody>
+        </table>
+        <?php else: ?>
+            <p>Nenhum produto foi encontrado.</p>
+        <?php endif; ?>
     </div>
-
-    <script>
-        function compressAndUpload() {
-            const files = document.getElementById('upload').files;
-            const pica = window.pica();
-            const uploadForm = new FormData(document.getElementById('produto-form'));
-
-            Array.from(files).forEach((file, index) => {
-                const img = new Image();
-                const reader = new FileReader();
-
-                reader.onload = function(e) {
-                    img.src = e.target.result;
-                    img.onload = function() {
-                        const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 800;
-                        const scaleFactor = MAX_WIDTH / img.width;
-                        canvas.width = MAX_WIDTH;
-                        canvas.height = img.height * scaleFactor;
-
-                        pica.resize(img, canvas)
-                            .then(result => pica.toBlob(result, 'image/jpeg', 0.8))
-                            .then(blob => {
-                                uploadForm.append('imagens[]', blob, file.name);
-
-                                // Após a última imagem, envia o formulário
-                                if (index === files.length - 1) {
-                                    uploadFiles(uploadForm);
-                                }
-                            });
-                    };
-                };
-
-                reader.readAsDataURL(file);
-            });
-        }
-
-        function uploadFiles(formData) {
-            const xhr = new XMLHttpRequest();
-            xhr.open('POST', '', true);
-            xhr.onload = function () {
-                if (xhr.status === 200) {
-                    alert('Imagens enviadas com sucesso!');
-                    window.location.reload();
-                } else {
-                    alert('Erro ao enviar as imagens.');
-                }
-            };
-            xhr.send(formData);
-        }
-    </script>
 
     <!-- Script para desaparecer a mensagem após 5 segundos -->
     <script>
@@ -254,6 +306,41 @@ if (isset($_GET['logout'])) {
                 }, 5000);
             });
         };
+    </script>
+    <script>
+        document.getElementById('upload').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    const pica = new Pica();
+                    canvas.width = 800; // Defina a largura desejada
+                    canvas.height = img.height * (800 / img.width); // Mantém a proporção
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                    pica.toBlob(canvas, 'image/jpeg', 0.8) // 0.8 = qualidade
+                        .then(function (blob) {
+                            // Crie um FormData para o upload
+                            const formData = new FormData();
+                            formData.append('image', blob, file.name);
+
+                            // Envie o FormData para o servidor
+                            fetch('upload.php', {
+                                method: 'POST',
+                                body: formData
+                            }).then(response => response.text())
+                            .then(result => console.log(result));
+                        });
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
     </script>
 </body>
 </html>
