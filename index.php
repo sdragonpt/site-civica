@@ -107,10 +107,10 @@ $produtos = get_produtos($search, $sort_by, $categoria_id);
             <!-- Main Content -->
             <div class="col-md-9">
                 <h2>Produtos</h2>
-                <form method="GET" id="filtersForm">
+                <form method="GET" id="filtersForm" class="mb-3">
                     <div class="form-group">
                         <label for="sortByName">Ordenar por:</label>
-                        <select class="form-control form-control-sm" id="sortByName" name="sort">
+                        <select class="form-control form-control-sm" id="sortByName" name="sort" onchange="this.form.submit()">
                             <option value="recent" <?php echo isset($_GET['sort']) && $_GET['sort'] == 'recent' ? 'selected' : ''; ?>>Recente</option>
                             <option value="name" <?php echo isset($_GET['sort']) && $_GET['sort'] == 'name' ? 'selected' : ''; ?>>Nome</option>
                             <option value="price" <?php echo isset($_GET['sort']) && $_GET['sort'] == 'price' ? 'selected' : ''; ?>>Preço</option>
@@ -118,7 +118,7 @@ $produtos = get_produtos($search, $sort_by, $categoria_id);
                     </div>
                     <div class="form-group">
                         <label for="filterCategory">Categoria:</label>
-                        <select class="form-control form-control-sm" id="filterCategory" name="categoria">
+                        <select class="form-control form-control-sm" id="filterCategory" name="categoria" onchange="this.form.submit()">
                             <option value="">Todas</option>
                             <?php
                             // Resetar o ponteiro do resultado para reusar a variável
@@ -132,6 +132,10 @@ $produtos = get_produtos($search, $sort_by, $categoria_id);
                                 </option>
                             <?php endwhile; ?>
                         </select>
+                    </div>
+                    <div class="form-group">
+                        <input type="hidden" name="search" value="<?php echo htmlspecialchars($search); ?>">
+                        <button type="submit" class="btn btn-primary btn-sm">Aplicar Filtros</button>
                     </div>
                 </form>
 
