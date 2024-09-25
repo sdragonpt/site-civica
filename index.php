@@ -164,8 +164,8 @@ $produtos = get_produtos($search, $sort_by, $categoria_id);
         </div>
     </div>
 
-    <!-- Rodapé -->
-    <div class="fim" style="background-color: #333; margin-top: 8vw">
+     <!-- Rodapé -->
+     <div class="fim" style="background-color: #333; margin-top: 8vw">
         <footer id="contacto" style="background-color: #333; color: #ffffff;">
             <div class="container" style="max-width: 1300px; padding: 20px 0;">
                 <div class="footer-section row">
@@ -191,6 +191,7 @@ $produtos = get_produtos($search, $sort_by, $categoria_id);
                         <p>Capital Social 100.000,00€</p>
                         <p>NIF/EORI: PT 504 117 246</p>
                         <p>Alvará: nº 43194</p>
+                    </div>
                 </div>
             </div>
 
