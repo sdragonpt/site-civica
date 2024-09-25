@@ -90,12 +90,12 @@ if (isset($_POST['add'])) {
 }
 
 // Função para compressão de imagens
-function compress_image($source, $destination, $quality) {
+function compress_image($source, $destination, $quality = 30) { // Definindo a qualidade padrão como 50
     $info = getimagesize($source);
 
     if ($info['mime'] == 'image/jpeg' || $info['mime'] == 'image/jpg') {
         $image = imagecreatefromjpeg($source);
-        imagejpeg($image, $destination, $quality); // 75 é a qualidade (0 a 100)
+        imagejpeg($image, $destination, $quality); // Usando a qualidade fornecida
     } elseif ($info['mime'] == 'image/gif') {
         $image = imagecreatefromgif($source);
         imagegif($image, $destination);
@@ -108,6 +108,7 @@ function compress_image($source, $destination, $quality) {
     // Libera a memória
     imagedestroy($image);
 }
+
 
 $stmt = $conn->prepare("SELECT * FROM produtos");
 $stmt->execute();
