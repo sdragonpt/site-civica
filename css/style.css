@@ -124,13 +124,13 @@ address { font-style: normal; }
   position: relative; overflow: hidden;
   background:
     linear-gradient(to right, rgba(13,13,13,0.90) 45%, rgba(13,13,13,0.55) 100%),
-    url("images/hero-bg.jpg") center / cover no-repeat, linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%);
+    url("../images/hero-bg.jpg") center / cover no-repeat, linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%);
 }
 /* Light theme: slightly lighter overlay, but still dark enough for text */
 [data-theme="light"] .hero {
   background:
     linear-gradient(to right, rgba(13,13,13,0.85) 45%, rgba(13,13,13,0.50) 100%),
-    url("images/hero-bg.jpg") center / cover no-repeat, linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%);
+    url("../images/hero-bg.jpg") center / cover no-repeat, linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%);
 }
 .hero::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: var(--yellow); opacity: 0.7; }
 .hero-content { max-width: 1280px; margin: 0 auto; width: 100%; padding: 48px 0; }
