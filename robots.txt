@@ -1,0 +1,29 @@
+# Cívica Equipamentos — robots.txt
+# https://civica.pt/robots.txt
+
+User-agent: *
+Allow: /
+Allow: /index.html
+Allow: /catalogo.html
+Allow: /machines.json
+
+# Keep admin panel out of search results
+Disallow: /admin.php
+
+# No need to index raw assets
+Disallow: /js/
+Disallow: /css/
+Disallow: /LEIA-ME.md
+
+# Block GPTBot, common AI scrapers (optional — remove if not desired)
+User-agent: GPTBot
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+# Sitemap location
+Sitemap: https://civica.pt/sitemap.xml

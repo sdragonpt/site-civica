@@ -1,0 +1,130 @@
+# ============================================================
+# CÍVICA EQUIPAMENTOS — .htaccess
+# ============================================================
+
+# ── Force HTTPS ───────────────────────────────────────────────
+RewriteEngine On
+RewriteCond %{HTTPS} off
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# ── Redirect www → non-www (or flip if you prefer www) ────────
+RewriteCond %{HTTP_HOST} ^www\.civica\.pt [NC]
+RewriteRule ^ https://civica.pt%{REQUEST_URI} [L,R=301]
+
+# ── Default document ──────────────────────────────────────────
+DirectoryIndex index.html
+
+# ── Disable directory listing ─────────────────────────────────
+Options -Indexes
+
+# ── Hide server information ───────────────────────────────────
+ServerSignature Off
+
+# ── Protect sensitive files ───────────────────────────────────
+<FilesMatch "(^\.htaccess|^\.htpasswd|^\.env|LEIA-ME\.md|\.gitignore|\.git)">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# ── Block access to raw .md and config files ──────────────────
+<FilesMatch "\.(md|json|sh|sql|log|bak|backup|config|ini|conf|yaml|yml)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# Exception: machines.json must be publicly readable
+<Files "machines.json">
+    Order Allow,Deny
+    Allow from all
+</Files>
+
+# ── Block bad bots and scanners ───────────────────────────────
+<IfModule mod_rewrite.c>
+    RewriteCond %{HTTP_USER_AGENT} (nikto|sqlmap|havij|curl|wget|python|scrapy|libwww) [NC,OR]
+    RewriteCond %{HTTP_USER_AGENT} (masscan|zgrab|go-http-client|python-requests) [NC]
+    RewriteRule .* - [F,L]
+</IfModule>
+
+# ── Security Headers ──────────────────────────────────────────
+<IfModule mod_headers.c>
+    # Prevent clickjacking
+    Header always set X-Frame-Options "SAMEORIGIN"
+
+    # Prevent MIME-type sniffing
+    Header always set X-Content-Type-Options "nosniff"
+
+    # XSS filter (legacy browsers)
+    Header always set X-XSS-Protection "1; mode=block"
+
+    # Referrer policy
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+    # Disable access to camera, mic, geolocation by default
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=()"
+
+    # Content Security Policy
+    # Allows: self, Google Fonts, Google Analytics, Google Tag Manager, Unsplash images
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com; frame-src 'none'; object-src 'none'; base-uri 'self';"
+
+    # HSTS — tells browsers to always use HTTPS (1 year)
+    # ENABLE ONLY after confirming HTTPS works correctly
+    # Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+
+    # Remove PHP/server version leak headers
+    Header unset X-Powered-By
+    Header unset Server
+</IfModule>
+
+# ── Cache Control ─────────────────────────────────────────────
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css                  "access plus 1 month"
+    ExpiresByType application/javascript    "access plus 1 month"
+    ExpiresByType image/png                 "access plus 6 months"
+    ExpiresByType image/jpg                 "access plus 6 months"
+    ExpiresByType image/jpeg                "access plus 6 months"
+    ExpiresByType image/webp                "access plus 6 months"
+    ExpiresByType image/svg+xml             "access plus 6 months"
+    ExpiresByType application/json          "access plus 0 seconds"
+    ExpiresByType text/html                 "access plus 0 seconds"
+</IfModule>
+
+# ── Gzip Compression ─────────────────────────────────────────
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json text/plain text/xml
+</IfModule>
+
+# ── Custom Error Pages ────────────────────────────────────────
+ErrorDocument 403 /index.html
+ErrorDocument 404 /index.html
+
+# ══════════════════════════════════════════════════════════════
+# PROTEÇÃO DO PAINEL DE ADMINISTRAÇÃO — HTTP Basic Auth
+# A senha é verificada pelo servidor Apache ANTES de carregar
+# qualquer ficheiro. É impossível vê-la no browser.
+#
+# COMO CONFIGURAR (2 opções):
+#
+# OPÇÃO A — cPanel (mais fácil, recomendado):
+#   1. Entre no cPanel → "Directory Privacy" (Privacidade de Diretório)
+#   2. Não encontra? Procure "Password Protect Directories"
+#   3. Navegue até à pasta do site
+#   4. Crie um utilizador e senha para a pasta
+#   5. O cPanel cria o .htpasswd automaticamente — aponte o caminho abaixo
+#
+# OPÇÃO B — Gerar o .htpasswd manualmente:
+#   1. Aceda a: https://www.htaccesstools.com/htpasswd-generator/
+#   2. Introduza utilizador (ex: admin) e senha
+#   3. Copie a linha gerada (ex: admin:$apr1$xyz...)
+#   4. Guarde num ficheiro chamado .htpasswd FORA da pasta public_html
+#      (ex: /home/civica/.htpasswd)
+#   5. Atualize o AuthUserFile abaixo com o caminho correto
+# ══════════════════════════════════════════════════════════════
+<Files "admin.html">
+    AuthType Basic
+    AuthName "Cívica — Área Reservada"
+    # ⚠️ ALTERE este caminho para o caminho real do seu .htpasswd no servidor
+    # Exemplo cPanel: /home/civica/.htpasswd
+    AuthUserFile /home/civica/.htpasswd
+    Require valid-user
+</Files>

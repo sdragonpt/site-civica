@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel Admin — Cívica Equipamentos</title>
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#F5C000">
+  <link rel="icon" type="image/png" href="images/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;0,800;0,900;1,800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="admin-layout" id="adminApp">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <img src="images/logo.png" alt="Cívica Equipamentos" height="28">
+    </div>
+    <nav class="sidebar-nav">
+      <div class="sb-item active" id="tabDash">
+        <i data-lucide="layout-dashboard"></i> Dashboard
+      </div>
+      <div class="sb-item" id="tabMachines">
+        <i data-lucide="package"></i> Equipamentos
+      </div>
+      <div class="sb-item" id="tabExport">
+        <i data-lucide="upload"></i> Exportar / Importar
+      </div>
+      <div class="sb-item" id="tabSite">
+        <i data-lucide="globe"></i> Ver Site
+      </div>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="sb-item" id="logoutBtn">
+        <i data-lucide="log-out"></i> Sair
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="admin-main">
+
+    <!-- DASHBOARD -->
+    <div id="pageDash">
+      <div class="admin-topbar">
+        <h1 class="admin-title">Dashboard</h1>
+        <button class="btn btn-primary" onclick="openAdd()">
+          <i data-lucide="plus"></i> Adicionar Equipamento
+        </button>
+      </div>
+      <div class="stat-row" id="dashStats"></div>
+      <p style="font-size:12px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:14px">Adicionados recentemente</p>
+      <div class="atbl" id="recentTbl"></div>
+    </div>
+
+    <!-- MACHINES -->
+    <div id="pageMachines" style="display:none">
+      <div class="admin-topbar">
+        <h1 class="admin-title">Equipamentos</h1>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <div class="search-wrap">
+            <i data-lucide="search"></i>
+            <input type="search" class="search-input" id="adminSearch" placeholder="Pesquisar..." style="width:200px">
+          </div>
+          <button class="btn btn-primary" onclick="openAdd()">
+            <i data-lucide="plus"></i> Adicionar
+          </button>
+        </div>
+      </div>
+      <div class="atbl" id="machineTbl"></div>
+    </div>
+
+    <!-- EXPORT/IMPORT -->
+    <div id="pageExport" style="display:none">
+      <div class="admin-topbar">
+        <h1 class="admin-title">Exportar / Importar</h1>
+      </div>
+
+      <div class="info-box">
+        <h4><i data-lucide="info"></i> Como publicar equipamentos no site</h4>
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-text"><strong>Adicione os equipamentos</strong> neste painel usando o botão "Adicionar Equipamento".</div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-text"><strong>Exporte o ficheiro</strong> <code>machines.json</code> clicando no botão abaixo.</div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-text"><strong>Carregue no cPanel</strong> ou faça <code>git push</code> — aceda a <strong>cPanel → Gestor de Ficheiros → pasta do site</strong> e substitua o ficheiro <code>machines.json</code>.</div>
+        </div>
+        <div class="step" style="margin-bottom:0">
+          <div class="step-num">4</div>
+          <div class="step-text"><strong>Fotos:</strong> carregue para <code>images/maquinas/</code> e use o caminho <code>images/maquinas/nome.jpg</code> no campo Imagem de cada equipamento.</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px" class="export-grid">
+        <div class="atbl" style="padding:24px">
+          <p style="font-family:var(--font-h);font-size:18px;font-weight:700;text-transform:uppercase;margin-bottom:8px">Exportar Dados</p>
+          <p style="font-size:14px;color:var(--muted);margin-bottom:16px">Descarregue o ficheiro <code>machines.json</code> para carregar no servidor.</p>
+          <button class="btn btn-primary" onclick="doExport()" style="width:100%;justify-content:center">
+            <i data-lucide="download"></i> Descarregar machines.json
+          </button>
+        </div>
+        <div class="atbl" style="padding:24px">
+          <p style="font-family:var(--font-h);font-size:18px;font-weight:700;text-transform:uppercase;margin-bottom:8px">Importar Dados</p>
+          <p style="font-size:14px;color:var(--muted);margin-bottom:16px">Restaure dados a partir de um ficheiro <code>machines.json</code> existente.</p>
+          <label class="btn btn-outline" style="width:100%;justify-content:center;cursor:pointer">
+            <i data-lucide="upload"></i> Selecionar ficheiro
+            <input type="file" accept=".json" id="importFile" style="display:none">
+          </label>
+        </div>
+      </div>
+
+      <div class="danger-box">
+        <h4><i data-lucide="alert-triangle"></i> Zona de Perigo</h4>
+        <p>Estas ações são irreversíveis. Exporte os dados antes de prosseguir.</p>
+        <button class="btn-danger" onclick="resetToSample()">
+          <i data-lucide="rotate-ccw"></i> Restaurar equipamentos de exemplo
+        </button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- MACHINE FORM MODAL -->
+<div class="form-overlay" id="formModal">
+  <div class="form-modal">
+    <div class="form-modal-title" id="formTitle">Adicionar Equipamento</div>
+    <input type="hidden" id="editId">
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Nome *</label>
+        <input id="fName" type="text" class="form-input" placeholder="Ex: Escavadora CAT 320" maxlength="100">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Categoria *</label>
+        <select id="fCat" class="form-input"><option value="">Selecione...</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Tipo *</label>
+        <select id="fType" class="form-input">
+          <option value="aluguer">Aluguer</option>
+          <option value="venda">Venda</option>
+          <option value="ambos">Aluguer &amp; Venda</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Disponível</label>
+        <select id="fAvail" class="form-input">
+          <option value="true">Disponível</option>
+          <option value="false">Indisponível</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Preço (€) *</label>
+        <input id="fPrice" type="number" class="form-input" placeholder="0" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Unidade</label>
+        <select id="fUnit" class="form-input">
+          <option value="dia">Por dia</option>
+          <option value="semana">Por semana</option>
+          <option value="mes">Por mês</option>
+          <option value="total">Preço total</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Descrição *</label>
+      <textarea id="fDesc" class="form-input" rows="3" placeholder="Descreva o equipamento..." maxlength="2000"></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">URL da Imagem</label>
+      <input id="fImg" type="text" class="form-input" placeholder="https://... ou images/maquinas/foto.jpg" oninput="previewImg(this.value)">
+      <div class="img-preview" id="imgPreview">
+        <div class="img-preview-empty"><i data-lucide="image"></i><span>Pré-visualização</span></div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Especificações técnicas <span style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label>
+      <div class="specs-list" id="specsList"></div>
+      <button type="button" onclick="addSpec()" class="btn btn-ghost" style="width:100%;justify-content:center;margin-top:8px;font-size:12px">
+        <i data-lucide="plus"></i> Adicionar especificação
+      </button>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <input type="checkbox" id="fFeat" style="width:16px;height:16px;accent-color:var(--yellow)">
+      <label for="fFeat" style="font-size:14px;cursor:pointer">Mostrar em destaque na página inicial</label>
+    </div>
+    <div class="form-footer">
+      <button type="button" class="btn btn-ghost" onclick="closeForm()">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="saveMachine()">
+        <i data-lucide="save"></i> Guardar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DELETE -->
+<div class="form-overlay" id="confirmModal">
+  <div class="form-modal" style="max-width:380px">
+    <div class="form-modal-title" style="font-size:18px">Eliminar equipamento?</div>
+    <p style="color:var(--muted);font-size:14px;margin-bottom:24px">Tem a certeza que quer eliminar <strong id="delName" style="color:var(--white)"></strong>? Esta ação não pode ser desfeita.</p>
+    <div class="form-footer">
+      <button class="btn btn-ghost" onclick="closeConfirm()">Cancelar</button>
+      <button class="btn-danger" onclick="confirmDel()"><i data-lucide="trash-2"></i> Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.344.0/dist/umd/lucide.min.js"></script>
+<script src="js/machines.js"></script>
+<script src="js/main.js"></script>
+<script>
+lucide.createIcons();
+
+let pendingDelId = null;
+
+// ── Auth handled by server (.htaccess + .htpasswd)
+// ── Navigation
+const pages = { dash: 'pageDash', machines: 'pageMachines', export: 'pageExport' };
+function showPage(name) {
+  Object.values(pages).forEach(id => document.getElementById(id).style.display = 'none');
+  document.getElementById(pages[name]).style.display = 'block';
+  document.querySelectorAll('.sb-item').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab' + name.charAt(0).toUpperCase() + name.slice(1)).classList.add('active');
+  if (name === 'dash')     renderDash();
+  if (name === 'machines') renderTable();
+}
+
+document.getElementById('tabDash').addEventListener('click',     () => showPage('dash'));
+document.getElementById('tabMachines').addEventListener('click', () => showPage('machines'));
+document.getElementById('tabExport').addEventListener('click',   () => showPage('export'));
+document.getElementById('tabSite').addEventListener('click',     () => window.open('index.html', '_blank'));
+document.getElementById('logoutBtn').addEventListener('click',   () => {
+  fetch(location.href, { headers: { Authorization: 'Basic ' + btoa('logout:logout') } }).catch(()=>{}).finally(() => { window.location.href = 'index.html'; });
+});
+
+// ── Dashboard
+function renderDash() {
+  const ms = getMachines();
+  const rent = ms.filter(m => m.type === 'aluguer' || m.type === 'ambos').length;
+  const sale = ms.filter(m => m.type === 'venda'   || m.type === 'ambos').length;
+  document.getElementById('dashStats').innerHTML = `
+    <div class="stat-box"><div class="stat-box-label">Total</div><div class="stat-box-num">${ms.length}</div><div class="stat-box-sub">no catálogo</div></div>
+    <div class="stat-box"><div class="stat-box-label">Aluguer</div><div class="stat-box-num">${rent}</div><div class="stat-box-sub">equipamentos</div></div>
+    <div class="stat-box"><div class="stat-box-label">Venda</div><div class="stat-box-num">${sale}</div><div class="stat-box-sub">equipamentos</div></div>
+    <div class="stat-box"><div class="stat-box-label">Disponíveis</div><div class="stat-box-num" style="color:#4ade80">${ms.filter(m=>m.available!==false).length}</div><div class="stat-box-sub">de ${ms.length} totais</div></div>`;
+  renderTableIn('recentTbl', [...ms].sort((a,b) => (b.createdAt||0)-(a.createdAt||0)).slice(0, 5));
+}
+
+// ── Tables
+function renderTable(filter = '') {
+  let ms = getMachines();
+  if (filter) { const q = filter.toLowerCase(); ms = ms.filter(m => m.name.toLowerCase().includes(q) || m.category.toLowerCase().includes(q)); }
+  renderTableIn('machineTbl', ms);
+}
+function renderTableIn(id, ms) {
+  const wrap = document.getElementById(id);
+  if (!ms.length) {
+    wrap.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)">Nenhum equipamento. <button onclick="openAdd()" class="btn btn-primary" style="margin-left:12px"><i data-lucide="plus"></i> Adicionar</button></div>`;
+    lucide.createIcons({ nodes: [wrap] });
+    return;
+  }
+  wrap.innerHTML = `<table><thead><tr>
+    <th>Imagem</th><th>Nome</th><th>Categoria</th><th>Tipo</th><th>Preço</th><th>Estado</th><th>Ações</th>
+  </tr></thead><tbody>${ms.map(m => `<tr>
+    <td>${m.image ? `<img class="atbl-thumb" src="${m.image}" alt="" loading="lazy" onerror="this.style.display='none'">` : '<i data-lucide="image" style="opacity:.3;width:32px;height:32px"></i>'}</td>
+    <td><strong>${sanitize(m.name)}</strong></td>
+    <td style="color:var(--muted)">${sanitize(m.category)}</td>
+    <td><span class="badge ${typeClass(m.type)}">${typeLabel(m.type)}</span></td>
+    <td style="font-family:var(--font-h);font-size:17px">${priceFormat(m.price)}<span style="font-size:12px;color:var(--muted)"> ${priceLabel(m.priceUnit)}</span></td>
+    <td style="font-size:12px;color:${m.available!==false?'#4ade80':'#f87171'}">${m.available!==false?'Disponível':'Indisponível'}</td>
+    <td><div class="tbl-actions">
+      <button class="btn-icon btn-edit" onclick="openEdit('${m.id}')" title="Editar"><i data-lucide="pencil"></i></button>
+      <button class="btn-icon btn-del"  onclick="openConfirm('${m.id}','${m.name.replace(/'/g,"\\'")}')" title="Eliminar"><i data-lucide="trash-2"></i></button>
+    </div></td>
+  </tr>`).join('')}</tbody></table>`;
+  lucide.createIcons({ nodes: [wrap] });
+}
+document.getElementById('adminSearch').addEventListener('input', e => renderTable(e.target.value));
+
+// ── Category select populate
+function populateCats() {
+  const sel = document.getElementById('fCat');
+  if (sel.options.length > 1) return;
+  CATEGORIES.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; sel.appendChild(o); });
+}
+
+// ── Specs
+function addSpec(label = '', value = '') {
+  const list = document.getElementById('specsList');
+  const row = document.createElement('div');
+  row.className = 'spec-row';
+  row.innerHTML = `<input type="text" class="form-input spec-lbl" placeholder="Ex: Peso" value="${label}"><input type="text" class="form-input spec-val" placeholder="Ex: 21 t" value="${value}"><button type="button" onclick="this.parentNode.remove()"><i data-lucide="x"></i></button>`;
+  list.appendChild(row);
+  lucide.createIcons({ nodes: [row] });
+}
+
+// ── Image preview
+function previewImg(url) {
+  const p = document.getElementById('imgPreview');
+  p.innerHTML = url
+    ? `<img src="${url}" alt="preview" onerror="this.parentNode.innerHTML='<div class=img-preview-empty><i data-lucide=image-off></i><span>Imagem não encontrada</span></div>';lucide.createIcons();">`
+    : '<div class="img-preview-empty"><i data-lucide="image"></i><span>Pré-visualização</span></div>';
+  lucide.createIcons({ nodes: [p] });
+}
+
+// ── Form open/close
+function openAdd() {
+  document.getElementById('formTitle').textContent = 'Adicionar Equipamento';
+  document.getElementById('editId').value = '';
+  ['fName','fDesc','fImg'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('fCat').value = '';
+  document.getElementById('fType').value = 'aluguer';
+  document.getElementById('fAvail').value = 'true';
+  document.getElementById('fPrice').value = '';
+  document.getElementById('fUnit').value = 'dia';
+  document.getElementById('fFeat').checked = false;
+  document.getElementById('specsList').innerHTML = '';
+  previewImg('');
+  populateCats();
+  document.getElementById('formModal').classList.add('open');
+  lucide.createIcons();
+}
+function openEdit(id) {
+  const m = getMachines().find(m => m.id === id);
+  if (!m) return;
+  populateCats();
+  document.getElementById('formTitle').textContent = 'Editar Equipamento';
+  document.getElementById('editId').value  = id;
+  document.getElementById('fName').value   = m.name;
+  document.getElementById('fCat').value    = m.category;
+  document.getElementById('fType').value   = m.type;
+  document.getElementById('fAvail').value  = m.available !== false ? 'true' : 'false';
+  document.getElementById('fPrice').value  = m.price;
+  document.getElementById('fUnit').value   = m.priceUnit || 'dia';
+  document.getElementById('fDesc').value   = m.description;
+  document.getElementById('fImg').value    = m.image || '';
+  document.getElementById('fFeat').checked = m.featured || false;
+  document.getElementById('specsList').innerHTML = '';
+  (m.specs || []).forEach(s => addSpec(s.label, s.value));
+  previewImg(m.image || '');
+  document.getElementById('formModal').classList.add('open');
+}
+function closeForm() { document.getElementById('formModal').classList.remove('open'); }
+document.getElementById('formModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeForm(); });
+
+// ── Save
+function saveMachine() {
+  const name  = document.getElementById('fName').value.trim();
+  const cat   = document.getElementById('fCat').value;
+  const desc  = document.getElementById('fDesc').value.trim();
+  const price = parseFloat(document.getElementById('fPrice').value);
+  if (!name || !cat || !desc || isNaN(price)) { showToast('Preencha todos os campos obrigatórios (*).', 'error'); return; }
+  const specs = [...document.querySelectorAll('#specsList .spec-row')].map(r => ({
+    label: r.querySelector('.spec-lbl').value.trim(),
+    value: r.querySelector('.spec-val').value.trim()
+  })).filter(s => s.label && s.value);
+  const data = {
+    name, category: cat,
+    type: document.getElementById('fType').value,
+    available: document.getElementById('fAvail').value === 'true',
+    price,
+    priceUnit: document.getElementById('fUnit').value,
+    description: desc,
+    image: document.getElementById('fImg').value.trim(),
+    featured: document.getElementById('fFeat').checked,
+    specs
+  };
+  const eid = document.getElementById('editId').value;
+  if (eid) { updateMachine(eid, data); showToast('Equipamento atualizado.', 'success'); }
+  else     { addMachine(data);        showToast('Equipamento adicionado.', 'success'); }
+  closeForm();
+  renderDash();
+  if (document.getElementById('pageMachines').style.display !== 'none') renderTable();
+}
+
+// ── Delete
+function openConfirm(id, name) { pendingDelId = id; document.getElementById('delName').textContent = name; document.getElementById('confirmModal').classList.add('open'); }
+function closeConfirm() { document.getElementById('confirmModal').classList.remove('open'); pendingDelId = null; }
+function confirmDel() { if (!pendingDelId) return; deleteMachine(pendingDelId); closeConfirm(); showToast('Equipamento eliminado.', 'success'); renderDash(); renderTable(); }
+document.getElementById('confirmModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeConfirm(); });
+
+// ── Export / Import
+function doExport() { exportMachines(); showToast('Ficheiro machines.json descarregado!', 'success'); }
+document.getElementById('importFile').addEventListener('change', async e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  try { const d = await importMachines(f); showToast(`${d.length} equipamentos importados.`, 'success'); renderDash(); }
+  catch { showToast('Erro ao importar. Verifique o ficheiro JSON.', 'error'); }
+  e.target.value = '';
+});
+function resetToSample() {
+  if (!confirm('Tem a certeza? Os dados atuais serão substituídos pelos exemplos.')) return;
+  saveMachines(SAMPLE_MACHINES);
+  showToast('Dados restaurados.', 'success');
+  renderDash();
+}
+
+// ── Style for export grid responsive
+const s = document.createElement('style');
+s.textContent = '@media(max-width:600px){.export-grid{grid-template-columns:1fr!important}}';
+document.head.appendChild(s);
+
+// ── Init
+renderDash();
+</script>
+</body>
+</html>

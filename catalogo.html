@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catálogo de Equipamentos — Aluguer e Venda | Cívica Equipamentos Vila Real</title>
+  <meta name="description" content="Catálogo completo de equipamentos para aluguer e venda em Vila Real. Escavadoras, plataformas elevatórias, empilhadores, geradores e compactadores.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://civica.pt/catalogo.html">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://civica.pt/catalogo.html">
+  <meta property="og:title" content="Catálogo — Cívica Equipamentos">
+  <meta property="og:description" content="Catálogo de equipamentos para aluguer e venda em Vila Real e Norte de Portugal.">
+  <meta property="og:image" content="https://civica.pt/images/og-image.jpg">
+  <meta property="og:locale" content="pt_PT">
+  <meta name="theme-color" content="#F5C000">
+  <link rel="icon" type="image/png" href="images/logo.png">
+  <link rel="apple-touch-icon" href="images/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;0,800;0,900;1,800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+  <script>(function(){var t=localStorage.getItem('civica_theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-XXXXXXXXXX',{anonymize_ip:true});</script>
+</head>
+<body>
+
+<nav class="nav scrolled">
+  <div class="nav-inner">
+    <a href="index.html"><img src="images/logo.png" alt="Cívica Equipamentos" height="34" loading="eager"></a>
+    <div class="nav-links">
+      <a href="index.html">Início</a>
+      <a href="catalogo.html" class="active">Catálogo</a>
+      <a href="catalogo.html?tipo=aluguer">Aluguer</a>
+      <a href="catalogo.html?tipo=venda">Venda</a>
+      <a href="index.html#contacto">Contacto</a>
+    </div>
+    <button class="theme-toggle" title="Mudar tema" aria-label="Mudar tema"><i data-lucide="sun"></i></button>
+    <a href="index.html#contacto" class="btn btn-primary nav-cta">Pedir Orçamento</a>
+    <button class="nav-toggle" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+<div class="nav-mobile">
+  <a href="index.html">Início</a>
+  <a href="catalogo.html">Catálogo</a>
+  <a href="catalogo.html?tipo=aluguer">Aluguer</a>
+  <a href="catalogo.html?tipo=venda">Venda</a>
+  <a href="index.html#contacto">Contacto</a>
+</div>
+
+<div class="page-hero">
+  <div class="page-hero-inner">
+    <span class="label" id="pageLabel">Todos os Equipamentos</span>
+    <h1 class="h2" id="pageTitle" style="margin-top:8px">Catálogo</h1>
+    <p style="color:var(--muted);margin-top:10px;font-size:15px">Explore a nossa frota completa disponível para aluguer e venda.</p>
+  </div>
+</div>
+
+<div class="filter-bar">
+  <div class="filter-bar-inner">
+    <button class="ftab active" data-type="todos">Todos</button>
+    <button class="ftab" data-type="aluguer">Aluguer</button>
+    <button class="ftab" data-type="venda">Venda</button>
+    <div class="filter-sep"></div>
+    <div class="filter-right">
+      <select class="filter-select" id="catFilter"><option value="">Todas as categorias</option></select>
+      <div class="search-wrap"><i data-lucide="search"></i><input type="search" class="search-input" id="searchInput" placeholder="Pesquisar..."></div>
+    </div>
+  </div>
+</div>
+
+<section class="catalog-section">
+  <div class="wrap">
+    <div class="catalog-meta">
+      <span><strong id="resultCount" style="color:var(--white)">0</strong> equipamentos encontrados</span>
+      <select class="filter-select" id="sortSelect">
+        <option value="newest">Mais recentes</option>
+        <option value="price-asc">Preço crescente</option>
+        <option value="price-desc">Preço decrescente</option>
+        <option value="name">Nome (A–Z)</option>
+      </select>
+    </div>
+    <div class="machines-grid" id="grid"><div class="loading" style="grid-column:1/-1;padding:60px 20px"><i data-lucide="loader"></i> A carregar equipamentos...</div></div>
+  </div>
+</section>
+
+<footer class="footer" style="margin-top:0">
+  <div class="footer-grid">
+    <div>
+      <div class="footer-logo"><img src="images/logo.png" alt="Cívica Equipamentos" height="28" loading="lazy"></div>
+      <p class="footer-desc">Especialistas em aluguer e venda de equipamentos de construção em Vila Real e Norte de Portugal.</p>
+      <p class="footer-meta">NIF: PT 504 117 246 · Alvará nº 43194</p>
+    </div>
+    <div class="footer-col"><h4>Categorias</h4><ul id="footCats"></ul></div>
+    <div class="footer-col"><h4>Empresa</h4><ul>
+      <li><a href="index.html">Início</a></li>
+      <li><a href="catalogo.html">Catálogo</a></li>
+      <li><a href="index.html#contacto">Contacto</a></li>
+    </ul></div>
+    <div class="footer-col"><h4>Contacto</h4><address class="footer-contact">
+      <div class="fc-row"><i data-lucide="phone"></i><a href="tel:+351967571033">+351 967 571 033</a></div>
+      <div class="fc-row"><i data-lucide="mail"></i><a href="mailto:civica@civica.pt">civica@civica.pt</a></div>
+      <div class="fc-row"><i data-lucide="map-pin"></i><span>5000-082 Vila Real</span></div>
+    </address></div>
+  </div>
+  <div class="footer-bottom">
+    <span>© <span id="footerYear"></span> Cívica - Construções, Engenharia e Equipamentos, Lda.</span>
+    <a href="sitemap.xml">Mapa do Site</a>
+  </div>
+</footer>
+
+<div class="overlay" id="modal" role="dialog" aria-modal="true">
+  <div class="modal-wrap">
+    <button class="modal-close" id="modalClose"><i data-lucide="x"></i></button>
+    <div class="modal" id="modalBody"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.344.0/dist/umd/lucide.min.js"></script>
+<script src="js/machines.js"></script>
+<script src="js/main.js"></script>
+<script>
+lucide.createIcons();
+let allMachines=[], curType='todos', curCat='', curSort='newest', curSearch='';
+const params=new URLSearchParams(location.search);
+if(params.get('tipo')) curType=params.get('tipo');
+if(params.get('cat'))  curCat=params.get('cat');
+
+document.querySelectorAll('.ftab').forEach(tab=>{
+  if(tab.dataset.type===curType)tab.classList.add('active');else tab.classList.remove('active');
+  tab.addEventListener('click',()=>{curType=tab.dataset.type;document.querySelectorAll('.ftab').forEach(t=>t.classList.toggle('active',t===tab));updateHeader();render();});
+});
+document.getElementById('sortSelect').addEventListener('change',e=>{curSort=e.target.value;render();});
+document.getElementById('searchInput').addEventListener('input',e=>{curSearch=e.target.value.trim();render();});
+document.getElementById('catFilter').addEventListener('change',e=>{curCat=e.target.value;render();});
+
+function updateHeader(){
+  const labels={todos:'Todos os Equipamentos',aluguer:'Equipamentos para Aluguer',venda:'Equipamentos para Venda'};
+  const titles={todos:'Catálogo',aluguer:'Aluguer',venda:'Venda'};
+  document.getElementById('pageLabel').textContent=labels[curType]||'Catálogo';
+  document.getElementById('pageTitle').textContent=curCat||titles[curType]||'Catálogo';
+}
+function getFiltered(){
+  let list=[...allMachines];
+  if(curType!=='todos')list=list.filter(m=>m.type===curType||m.type==='ambos');
+  if(curCat)list=list.filter(m=>m.category===curCat);
+  if(curSearch){const q=curSearch.toLowerCase();list=list.filter(m=>m.name.toLowerCase().includes(q)||m.category.toLowerCase().includes(q)||m.description.toLowerCase().includes(q));}
+  if(curSort==='price-asc')list.sort((a,b)=>a.price-b.price);
+  if(curSort==='price-desc')list.sort((a,b)=>b.price-a.price);
+  if(curSort==='name')list.sort((a,b)=>a.name.localeCompare(b.name,'pt'));
+  if(curSort==='newest')list.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  return list;
+}
+function render(){
+  const grid=document.getElementById('grid'),list=getFiltered();
+  document.getElementById('resultCount').textContent=list.length;
+  grid.innerHTML='';
+  if(!list.length){grid.innerHTML=`<div class="empty"><i data-lucide="search-x"></i><p>Nenhum equipamento encontrado.</p><button onclick="resetFilters()" class="btn btn-outline" style="margin-top:16px">Limpar filtros</button></div>`;lucide.createIcons();return;}
+  list.forEach(m=>grid.appendChild(buildMachineCard(m,openModal)));
+  lucide.createIcons();
+}
+function resetFilters(){curType='todos';curCat='';curSearch='';document.querySelectorAll('.ftab').forEach(t=>t.classList.toggle('active',t.dataset.type==='todos'));document.getElementById('catFilter').value='';document.getElementById('searchInput').value='';render();}
+
+function openModal(m){
+  const ov=document.getElementById('modal'),bd=document.getElementById('modalBody');
+  const sp=(m.specs||[]).map(s=>`<div class="spec-card"><div class="spec-lbl">${sanitize(s.label)}</div><div class="spec-val">${sanitize(s.value)}</div></div>`).join('');
+  bd.innerHTML=`<div class="modal-img">${m.image?`<img src="${sanitize(m.image)}" alt="${sanitize(m.name)}" loading="lazy">`:'<div style="height:100%;display:flex;align-items:center;justify-content:center"><i data-lucide="package" style="width:64px;height:64px;opacity:.3"></i></div>'}</div><div class="modal-body"><div style="margin-bottom:4px"><span class="badge ${typeClass(m.type)}">${typeLabel(m.type)}</span></div><h2 class="modal-name">${sanitize(m.name)}</h2><div class="modal-cat">${sanitize(m.category)}</div><p class="modal-desc">${sanitize(m.description)}</p>${sp?`<div class="modal-specs">${sp}</div>`:''}<div class="modal-foot"><div class="modal-price">${priceFormat(m.price)}<span> ${priceLabel(m.priceUnit)}</span></div><a href="index.html#contacto" class="btn btn-primary"><i data-lucide="message-circle"></i> Pedir Orçamento</a></div></div>`;
+  ov.classList.add('open');document.body.style.overflow='hidden';lucide.createIcons();
+  setTimeout(()=>document.getElementById('modalClose').focus(),80);
+}
+function closeModal(){document.getElementById('modal').classList.remove('open');document.body.style.overflow='';}
+document.getElementById('modalClose').addEventListener('click',closeModal);
+document.getElementById('modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+
+(async function(){
+  allMachines=await loadPublicMachines();
+  const sel=document.getElementById('catFilter');
+  [...new Set(allMachines.map(m=>m.category))].sort().forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;if(c===curCat)o.selected=true;sel.appendChild(o);});
+  const fc=document.getElementById('footCats');
+  CATEGORIES.slice(0,5).forEach(c=>{const li=document.createElement('li');li.innerHTML=`<a href="catalogo.html?cat=${encodeURIComponent(c)}">${c}</a>`;fc.appendChild(li);});
+  updateHeader();render();
+})();
+</script>
+</body>
+</html>

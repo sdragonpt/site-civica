@@ -1,0 +1,14 @@
+# Protect sensitive files in /api/
+<FilesMatch "^(config\.php|setup\.php)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# Allow machines.php
+<Files "machines.php">
+    Order Allow,Deny
+    Allow from all
+</Files>
+
+# JSON responses
+AddType application/json .json

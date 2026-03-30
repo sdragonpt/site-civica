@@ -1,0 +1,116 @@
+[
+  {
+    "id": "m001",
+    "name": "Escavadora CAT 320",
+    "category": "Escavadoras",
+    "type": "aluguer",
+    "description": "Escavadora de rastos de alta performance com balde de 1.2m³. Ideal para obras de grande dimensão, movimento de terras e demolição. Cabine ROPS/FOPS com ar condicionado.",
+    "price": 280,
+    "priceUnit": "dia",
+    "image": "https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=800&q=80",
+    "specs": [
+      { "label": "Peso operacional", "value": "21.3 t" },
+      { "label": "Potência", "value": "121 kW" },
+      { "label": "Profundidade max.", "value": "6.7 m" },
+      { "label": "Balde", "value": "1.2 m³" }
+    ],
+    "available": true,
+    "featured": true,
+    "createdAt": 1700000000000
+  },
+  {
+    "id": "m002",
+    "name": "Plataforma Elevatória JLG 450AJ",
+    "category": "Plataformas Elevatórias",
+    "type": "aluguer",
+    "description": "Plataforma articulada a diesel com altura de trabalho de 15.7m. Perfeita para trabalhos em altura em exterior. 4x4 com tração nas quatro rodas.",
+    "price": 130,
+    "priceUnit": "dia",
+    "image": "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&q=80",
+    "specs": [
+      { "label": "Altura de trabalho", "value": "15.7 m" },
+      { "label": "Alcance horizontal", "value": "7.6 m" },
+      { "label": "Capacidade", "value": "227 kg" },
+      { "label": "Propulsão", "value": "4x4 Diesel" }
+    ],
+    "available": true,
+    "featured": true,
+    "createdAt": 1700000000001
+  },
+  {
+    "id": "m003",
+    "name": "Empilhador Toyota 8FBN25",
+    "category": "Empilhadores",
+    "type": "ambos",
+    "description": "Empilhador elétrico Toyota com capacidade de carga de 2500kg. Silencioso, eficiente e ideal para uso em armazéns. Bateria de 80V com autonomia de 8h.",
+    "price": 18500,
+    "priceUnit": "total",
+    "image": "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&q=80",
+    "specs": [
+      { "label": "Capacidade", "value": "2500 kg" },
+      { "label": "Altura de elevação", "value": "5.5 m" },
+      { "label": "Propulsão", "value": "Elétrico 80V" },
+      { "label": "Autonomia", "value": "8 horas" }
+    ],
+    "available": true,
+    "featured": false,
+    "createdAt": 1700000000002
+  },
+  {
+    "id": "m004",
+    "name": "Compactador Bomag BW 177",
+    "category": "Compactadores",
+    "type": "aluguer",
+    "description": "Cilindro compactador de solo de tambor simples com sistema de vibração de alta amplitude. Indicado para compactação de bases e sub-bases em obras rodoviárias.",
+    "price": 180,
+    "priceUnit": "dia",
+    "image": "https://images.unsplash.com/photo-1590508605700-1fcb7652cf3f?w=800&q=80",
+    "specs": [
+      { "label": "Massa operacional", "value": "11 t" },
+      { "label": "Largura de trabalho", "value": "2.0 m" },
+      { "label": "Frequência de vibração", "value": "28 Hz" },
+      { "label": "Potência", "value": "97 kW" }
+    ],
+    "available": true,
+    "featured": false,
+    "createdAt": 1700000000003
+  },
+  {
+    "id": "m005",
+    "name": "Gerador FG Wilson P200",
+    "category": "Geradores",
+    "type": "aluguer",
+    "description": "Grupo gerador a diesel de 200kVA com quadro de comando automático ATS. Contentor insonorizado, pronto para ligação direta a instalações existentes.",
+    "price": 85,
+    "priceUnit": "dia",
+    "image": "https://images.unsplash.com/photo-1558492426-df14e290aefa?w=800&q=80",
+    "specs": [
+      { "label": "Potência", "value": "200 kVA" },
+      { "label": "Tensão", "value": "400 V / 50 Hz" },
+      { "label": "Consumo", "value": "42 L/h" },
+      { "label": "Nível sonoro", "value": "72 dBA" }
+    ],
+    "available": true,
+    "featured": false,
+    "createdAt": 1700000000004
+  },
+  {
+    "id": "m006",
+    "name": "Mini-Retroescavadora Bobcat E35",
+    "category": "Mini-Retroescavadoras",
+    "type": "aluguer",
+    "description": "Mini-retroescavadora compacta ideal para espaços reduzidos, jardins, obras interiores e demolições. Zero tail swing, perfeita para trabalhos junto a paredes.",
+    "price": 160,
+    "priceUnit": "dia",
+    "image": "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&q=80",
+    "specs": [
+      { "label": "Peso operacional", "value": "3.7 t" },
+      { "label": "Profundidade de escavação", "value": "3.4 m" },
+      { "label": "Potência", "value": "24 kW" },
+      { "label": "Balde", "value": "0.08 m³" }
+    ],
+    "available": true,
+    "featured": true,
+    "createdAt": 1700000000005
+  }
+]
